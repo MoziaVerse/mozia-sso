@@ -11,6 +11,7 @@ RUN NODE_OPTIONS="--max-old-space-size=4096" yarn run build
 
 FROM --platform=$BUILDPLATFORM golang:1.25.8 AS BACK
 WORKDIR /go/src/casdoor
+ENV GOPROXY=https://goproxy.cn,direct
 
 # Copy only go.mod and go.sum first for dependency caching
 COPY go.mod go.sum ./

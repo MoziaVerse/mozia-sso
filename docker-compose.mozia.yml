@@ -10,7 +10,7 @@ services:
       target: STANDARD
     entrypoint: /bin/sh -c 'cp /conf/app.mozia.conf /conf/app.conf && ./server --createDatabase=false'
     ports:
-      - "8008:8000"
+      - "8778:8000"
     environment:
       RUNNING_IN_DOCKER: "true"
     volumes:
