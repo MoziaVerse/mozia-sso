@@ -1,0 +1,19 @@
+version: '3.1'
+services:
+  mozia-sso:
+    image: mozia-sso
+    container_name: mozia-sso
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: STANDARD
+    entrypoint: /bin/sh -c 'cp /conf/app.mozia.conf /conf/app.conf && ./server --createDatabase=false'
+    ports:
+      - "8008:8000"
+    environment:
+      RUNNING_IN_DOCKER: "true"
+    volumes:
+      - ./conf:/conf/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
