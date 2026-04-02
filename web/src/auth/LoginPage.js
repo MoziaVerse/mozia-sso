@@ -1223,11 +1223,25 @@ class LoginPage extends React.Component {
     }
 
     return (
-      <div>
-        <div style={{fontSize: 16, textAlign: "left"}}>
-          {i18next.t("login:Continue with")}&nbsp;:
+      <div style={{width: "100%"}}>
+        <div style={{
+          fontSize: 15,
+          fontWeight: 500,
+          textAlign: "left",
+          color: "#666",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+        }}>
+          <span style={{
+            width: 4,
+            height: 16,
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            marginRight: 10,
+            borderRadius: 2,
+          }}></span>
+          {i18next.t("login:Continue with")}
         </div>
-        <br />
         <div onClick={() => {
           const values = {};
           values["application"] = application.name;
@@ -1235,10 +1249,30 @@ class LoginPage extends React.Component {
         }}>
           <SelfLoginButton account={this.props.account} />
         </div>
-        <br />
-        <br />
-        <div style={{fontSize: 16, textAlign: "left"}}>
-          {i18next.t("login:Or sign in with another account")}&nbsp;:
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          margin: "24px 0 16px 0",
+        }}>
+          <div style={{
+            flex: 1,
+            height: 1,
+            background: "linear-gradient(to right, transparent, #e0e0e0, transparent)",
+          }}></div>
+          <span style={{
+            fontSize: 13,
+            color: "#999",
+            padding: "0 16px",
+            fontWeight: 400,
+            letterSpacing: "0.5px",
+          }}>
+            {i18next.t("login:Or sign in with another account")}
+          </span>
+          <div style={{
+            flex: 1,
+            height: 1,
+            background: "linear-gradient(to right, transparent, #e0e0e0, transparent)",
+          }}></div>
         </div>
       </div>
     );

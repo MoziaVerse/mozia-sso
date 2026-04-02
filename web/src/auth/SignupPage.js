@@ -25,7 +25,7 @@ import * as AgreementModal from "../common/modal/AgreementModal";
 import {SendCodeInput} from "../common/SendCodeInput";
 import RegionSelect from "../common/select/RegionSelect";
 import CustomGithubCorner from "../common/CustomGithubCorner";
-import LanguageSelect from "../common/select/LanguageSelect";
+// import LanguageSelect from "../common/select/LanguageSelect";
 import {withRouter} from "react-router-dom";
 import {CountryCodeSelect} from "../common/select/CountryCodeSelect";
 import * as PasswordChecker from "../common/PasswordChecker";
@@ -254,10 +254,10 @@ class SignupPage extends React.Component {
     }
   }
 
-  getLanguageSelectorMode(application) {
-    const languagesItem = application.signinItems?.find((item) => item.name === "Languages");
-    return languagesItem?.rule;
-  }
+  // getLanguageSelectorMode(application) {
+  //   const languagesItem = application.signinItems?.find((item) => item.name === "Languages");
+  //   return languagesItem?.rule;
+  // }
 
   onFinish(values) {
     const application = this.getApplicationObj();
@@ -1015,11 +1015,11 @@ class SignupPage extends React.Component {
               {
                 Setting.renderLogo(application)
               }
-              <LanguageSelect
+              {/* <LanguageSelect
                 languages={application.organizationObj.languages}
                 mode={this.getLanguageSelectorMode(application)}
                 style={{top: "55px", right: "5px", position: "absolute"}}
-              />
+              /> */}
               {
                 this.renderForm(application)
               }
