@@ -19,8 +19,8 @@ export const DefaultApplication = "app-built-in";
 export let ShowGithubCorner = false;
 export let IsDemoMode = false;
 
-export let ForceLanguage = "";
-export let DefaultLanguage = "en";
+export let ForceLanguage = "zh";
+export let DefaultLanguage = "zh";
 
 export let StaticBaseUrl = "https://cdn.casbin.org";
 
