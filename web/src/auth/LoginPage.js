@@ -1033,14 +1033,8 @@ class LoginPage extends React.Component {
 
     const showForm = Setting.isPasswordEnabled(application) || Setting.isCodeSigninEnabled(application) || Setting.isWebAuthnEnabled(application) || Setting.isLdapEnabled(application) || Setting.isFaceIdEnabled(application);
     if (showForm) {
-      let loginWidth = 320;
-      if (Setting.getLanguage() === "fr") {
-        loginWidth += 20;
-      } else if (Setting.getLanguage() === "es") {
-        loginWidth += 40;
-      } else if (Setting.getLanguage() === "ru") {
-        loginWidth += 10;
-      }
+      // 原硬编码 loginWidth(320px) 已删除:Form 改为 width: 100% 跟随卡片内宽,
+      // 与注册页(SignupPage)对齐尺寸
 
       return (
         <Form
@@ -1055,7 +1049,7 @@ class LoginPage extends React.Component {
           onFinish={(values) => {
             this.onFinish(values);
           }}
-          style={{width: `${loginWidth}px`}}
+          style={{width: "100%"}}
           size="large"
           ref={this.form}
         >
