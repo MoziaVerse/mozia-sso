@@ -31,24 +31,8 @@ import {CountryCodeSelect} from "../common/select/CountryCodeSelect";
 import * as PasswordChecker from "../common/PasswordChecker";
 import * as InvitationBackend from "../backend/InvitationBackend";
 
-const formItemLayout = {
-  labelCol: {
-    xs: {
-      span: 24,
-    },
-    sm: {
-      span: 8,
-    },
-  },
-  wrapperCol: {
-    xs: {
-      span: 24,
-    },
-    sm: {
-      span: 16,
-    },
-  },
-};
+// 删除原 formItemLayout(labelCol/wrapperCol 8:16):该配置使 vertical 模式下 input 仍只占 67% 宽,
+// Form 直接走 layout="vertical" 让 label/control 自动 100% 宽
 
 const renderFormItem = (signupItem) => {
   const commonRules = [
@@ -94,18 +78,7 @@ const renderFormItem = (signupItem) => {
   }
 };
 
-export const tailFormItemLayout = {
-  wrapperCol: {
-    xs: {
-      span: 24,
-      offset: 0,
-    },
-    sm: {
-      span: 16,
-      offset: 8,
-    },
-  },
-};
+export const tailFormItemLayout = {};
 
 class SignupPage extends React.Component {
   constructor(props) {
@@ -840,17 +813,19 @@ class SignupPage extends React.Component {
           <Button type="primary" htmlType="submit" className="signup-button">
             {i18next.t("account:Sign Up")}
           </Button>
-          &nbsp;&nbsp;{i18next.t("signup:Have account?")}&nbsp;
-          <a className="signup-link" onClick={() => {
-            const linkInStorage = sessionStorage.getItem("signinUrl");
-            if (linkInStorage !== null && linkInStorage !== "") {
-              Setting.goToLinkSoft(this, linkInStorage);
-            } else {
-              Setting.redirectToLoginPage(application, this.props.history);
-            }
-          }}>
-            {i18next.t("signup:sign in now")}
-          </a>
+          <div className="signup-bottom-row">
+            {i18next.t("signup:Have account?")}&nbsp;
+            <a className="signup-link" onClick={() => {
+              const linkInStorage = sessionStorage.getItem("signinUrl");
+              if (linkInStorage !== null && linkInStorage !== "") {
+                Setting.goToLinkSoft(this, linkInStorage);
+              } else {
+                Setting.redirectToLoginPage(application, this.props.history);
+              }
+            }}>
+              {i18next.t("signup:sign in now")}
+            </a>
+          </div>
         </Form.Item>
       );
     } else if (signupItem.name === "Providers") {
@@ -922,9 +897,9 @@ class SignupPage extends React.Component {
 
     return (
       <Form
-        {...formItemLayout}
         ref={this.form}
         name="signup"
+        className="login-form"
         onFinish={(values) => this.onFinish(values)}
         onFinishFailed={(errorInfo) => this.onFinishFailed(errorInfo.values, errorInfo.errorFields, errorInfo.outOfDate)}
         initialValues={{
@@ -933,8 +908,7 @@ class SignupPage extends React.Component {
           countryCode: application.organizationObj.countryCodes?.[0],
         }}
         size="large"
-        layout={Setting.isMobile() ? "vertical" : "horizontal"}
-        style={{width: Setting.isMobile() ? "300px" : "400px"}}
+        layout="vertical"
       >
         <Form.Item
           name="application"
@@ -1012,9 +986,11 @@ class SignupPage extends React.Component {
               {
                 Setting.renderHelmet(application)
               }
-              {
-                Setting.renderLogo(application)
-              }
+              <div className="login-logo-box">
+                {
+                  Setting.renderLogo(application)
+                }
+              </div>
               {/* <LanguageSelect
                 languages={application.organizationObj.languages}
                 mode={this.getLanguageSelectorMode(application)}
