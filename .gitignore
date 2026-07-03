@@ -20,10 +20,21 @@ bin/
 .idea/
 *.iml
 .vscode/settings.json
+.env
+.env.*
+!.env.mozia.example
+*.bak
+*.key
+*.pem
 
 tmp/
 tmpFiles/
 *.tmp
+.omx/
+.omc/
+.claude/
+.agents/tmp/
+backups/
 logs/
 files/
 lastupdate.tmp

@@ -1,1 +1,17 @@
 web/node_modules/
+.git
+.github
+.env
+.env.*
+!.env.mozia.example
+.omx
+.omc
+.claude
+.agents/tmp
+backups
+logs
+files
+*.bak
+*.swp
+*.key
+*.pem

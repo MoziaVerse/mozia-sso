@@ -10,9 +10,14 @@ services:
       target: STANDARD
     entrypoint: /bin/sh -c 'cp /conf/app.mozia.conf /conf/app.conf && ./server --createDatabase=false'
     ports:
-      - "8778:8000"
+      - "${MOZIA_SSO_BIND_LOCAL:-127.0.0.1:8778}:8000"
+    env_file:
+      - .env
     environment:
       RUNNING_IN_DOCKER: "true"
+      dataSourceName: ${dataSourceName:?set dataSourceName in .env; never commit real database credentials}
+      redisEndpoint: ${redisEndpoint:-}
+      radiusSecret: ${radiusSecret:-replace_with_radius_secret}
     volumes:
       - ./conf:/conf/
     extra_hosts:
