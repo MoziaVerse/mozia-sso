@@ -22,3 +22,10 @@ services:
       - ./conf:/conf/
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - postgres_db_internal
+
+networks:
+  postgres_db_internal:
+    external: true
