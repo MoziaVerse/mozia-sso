@@ -80,6 +80,26 @@ type VerificationRecord struct {
 }
 
 func IsAllowSend(user *User, remoteAddr, recordType string, application *Application) error {
+	// Get timeout from application, or use default.
+	//
+	// A negative codeResendTimeout disables this check entirely. That escape hatch
+	// exists because the throttle below is keyed on remoteAddr, which is only a
+	// meaningful identity when clients reach Casdoor with distinct addresses. Behind
+	// upstream SNAT every caller collapses onto a handful of pool addresses, so the
+	// "one code per 60s" budget becomes site-wide: one user's code locks out everyone
+	// else sharing that address. Deployments in that position need a way to turn this
+	// off and throttle by phone/email upstream instead.
+	//
+	// 0 keeps meaning "unset" (fall back to 60s), so existing applications are
+	// unaffected — only an explicit negative value opts out.
+	resendTimeoutInSeconds := int64(60)
+	if application != nil && application.CodeResendTimeout != 0 {
+		resendTimeoutInSeconds = int64(application.CodeResendTimeout)
+	}
+	if resendTimeoutInSeconds <= 0 {
+		return nil
+	}
+
 	var record VerificationRecord
 	record.RemoteAddr = remoteAddr
 	record.Type = recordType
@@ -90,12 +110,6 @@ func IsAllowSend(user *User, remoteAddr, recordType string, application *Applica
 	has, err := ormer.Engine.Desc("created_time").Get(&record)
 	if err != nil {
 		return err
-	}
-
-	// Get timeout from application, or use default
-	resendTimeoutInSeconds := int64(60)
-	if application != nil && application.CodeResendTimeout > 0 {
-		resendTimeoutInSeconds = int64(application.CodeResendTimeout)
 	}
 
 	now := time.Now().Unix()
