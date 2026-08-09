@@ -20,7 +20,12 @@ RUN go mod download
 # Copy source files
 COPY . .
 
-RUN go test -v -run TestGetVersionInfo ./util/system_test.go ./util/system.go ./util/variable.go
+# NOTE: upstream runs `go test -run TestGetVersionInfo` here. That test asserts a
+# hardcoded upstream tag/offset (v1.257.0, 3 commits ahead) and reads .git via
+# go-git, so it can only ever pass on that exact upstream commit — never on a fork.
+# It also cannot run at all since .git is excluded from the build context. Dropping
+# it: GetVersionInfo() already degrades gracefully at runtime (returns empty version
+# plus an error when the repo is unreadable), so nothing downstream depends on it.
 RUN ./build.sh
 
 FROM alpine:latest AS STANDARD
