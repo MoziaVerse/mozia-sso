@@ -79,6 +79,7 @@
   }
 
   var authInfo = {
+    HduCAS: {endpoint: "https://sso.hdu.edu.cn/login"},
     Google: {scope: "profile+email", endpoint: "https://accounts.google.com/signin/oauth"},
     GitHub: {scope: "user:email+read:user", endpoint: "https://github.com/login/oauth/authorize"},
     QQ: {scope: "get_user_info", endpoint: "https://graph.qq.com/oauth2.0/authorize"},
@@ -209,7 +210,10 @@
     var codeChallenge = await generateCodeChallenge(codeVerifier);
     storeCodeVerifier(state, codeVerifier);
 
-    if (provider.type === "AzureAD") {
+    if (provider.type === "HduCAS") {
+      var service = redirectUri + "?state=" + encodeURIComponent(state);
+      return endpoint + "?service=" + encodeURIComponent(service);
+    } else if (provider.type === "AzureAD") {
       if (provider.domain !== "") {
         endpoint = endpoint.replace("common", provider.domain);
       }
