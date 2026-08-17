@@ -117,7 +117,7 @@ func GetIdProvider(idpInfo *ProviderInfo, redirectUrl string) (IdProvider, error
 	case "Casdoor":
 		return NewCasdoorIdProvider(idpInfo.ClientId, idpInfo.ClientSecret, redirectUrl, idpInfo.HostUrl), nil
 	case "HduCAS":
-		return NewHduCasIdProvider(idpInfo.UserInfoURL, redirectUrl), nil
+		return NewHduCasIdProvider(hduCasValidateURL, redirectUrl), nil
 	case "Okta":
 		return NewOktaIdProvider(idpInfo.ClientId, idpInfo.ClientSecret, redirectUrl, idpInfo.HostUrl), nil
 	case "Douyin":

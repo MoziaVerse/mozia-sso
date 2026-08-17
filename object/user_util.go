@@ -37,7 +37,7 @@ func GetUserByField(organizationName string, field string, value string) (*User,
 		return nil, nil
 	}
 	if field == HduCASProviderType {
-		return getExternalIdentityUser(organizationName, field, value)
+		return getHduIdentityUser(organizationName, value)
 	}
 
 	user := User{Owner: organizationName}

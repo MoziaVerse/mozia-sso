@@ -13,6 +13,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const hduCasValidateURL = "https://sso.hdu.edu.cn/p3/serviceValidate"
+
 type HduCasIdProvider struct {
 	Client      *http.Client
 	ValidateURL string

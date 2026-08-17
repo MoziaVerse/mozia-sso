@@ -458,7 +458,7 @@ export function getAuthUrl(application, provider, method, code) {
 
   if (provider.type === "HduCAS") {
     const service = `${redirectUri}?state=${encodeURIComponent(state)}`;
-    return `${provider.customAuthUrl || endpoint}?service=${encodeURIComponent(service)}`;
+    return `${endpoint}?service=${encodeURIComponent(service)}`;
   }
 
   if (provider.type === "AzureAD") {

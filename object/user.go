@@ -262,7 +262,6 @@ type Userinfo struct {
 	Groups        []string `json:"groups,omitempty"`
 	Roles         []string `json:"roles,omitempty"`
 	Permissions   []string `json:"permissions,omitempty"`
-	HduVerified   bool     `json:"hdu_verified"`
 	HduVerifiedAt string   `json:"hdu_verified_at,omitempty"`
 }
 
@@ -1235,7 +1234,6 @@ func GetUserInfo(user *User, scope string, aud string, host string) (*Userinfo, 
 	if strings.Contains(scope, "profile") {
 		resp.RealName = user.RealName
 		resp.IsVerified = user.IsVerified
-		resp.HduVerified = user.HduVerifiedAt != ""
 		resp.HduVerifiedAt = user.HduVerifiedAt
 	}
 

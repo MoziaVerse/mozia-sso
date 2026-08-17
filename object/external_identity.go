@@ -20,12 +20,12 @@ type ExternalIdentityBinding struct {
 	VerifiedAt string `xorm:"varchar(100)" json:"verifiedAt"`
 }
 
-func externalIdentityKey(parts ...string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprint(parts))))
+func hduIdentityKey(owner, subject string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprint([]string{owner, HduCASProviderType, subject}))))
 }
 
-func getExternalIdentityUser(owner, provider, subject string) (*User, error) {
-	binding := ExternalIdentityBinding{SubjectKey: externalIdentityKey(owner, provider, subject)}
+func getHduIdentityUser(owner, subject string) (*User, error) {
+	binding := ExternalIdentityBinding{SubjectKey: hduIdentityKey(owner, subject)}
 	exists, err := ormer.Engine.Get(&binding)
 	if err != nil || !exists {
 		return nil, err
@@ -43,7 +43,7 @@ func linkHduCAS(user *User, subject string) (bool, error) {
 
 	verifiedAt := ""
 	if subject == "" {
-		if _, err := session.Where("user_key = ?", externalIdentityKey(user.Owner, HduCASProviderType, user.Name)).Delete(&ExternalIdentityBinding{}); err != nil {
+		if _, err := session.Where("user_key = ?", hduIdentityKey(user.Owner, user.Name)).Delete(&ExternalIdentityBinding{}); err != nil {
 			return false, err
 		}
 		if _, err := session.Table(user).ID(core.PK{user.Owner, user.Name}).Update(map[string]interface{}{"hdu_cas": "", "hdu_verified_at": ""}); err != nil {
@@ -52,8 +52,8 @@ func linkHduCAS(user *User, subject string) (bool, error) {
 	} else {
 		verifiedAt = util.GetCurrentTime()
 		binding := ExternalIdentityBinding{
-			SubjectKey: externalIdentityKey(user.Owner, HduCASProviderType, subject),
-			UserKey:    externalIdentityKey(user.Owner, HduCASProviderType, user.Name),
+			SubjectKey: hduIdentityKey(user.Owner, subject),
+			UserKey:    hduIdentityKey(user.Owner, user.Name),
 			Owner:      user.Owner, Provider: HduCASProviderType, Subject: subject, UserName: user.Name, VerifiedAt: verifiedAt,
 		}
 		if _, err := session.Insert(&binding); err != nil {

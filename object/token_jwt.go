@@ -112,7 +112,7 @@ type UserWithoutThirdIdp struct {
 	PreHash           string   `xorm:"varchar(100)" json:"preHash"`
 	RegisterType      string   `xorm:"varchar(100)" json:"registerType"`
 	RegisterSource    string   `xorm:"varchar(100)" json:"registerSource"`
-	HduVerifiedAt     string   `xorm:"hdu_verified_at varchar(100)" json:"hduVerifiedAt"`
+	HduVerifiedAt     string   `xorm:"hdu_verified_at varchar(100)" json:"hdu_verified_at"`
 
 	GitHub   string `xorm:"github varchar(100)" json:"github"`
 	Google   string `xorm:"varchar(100)" json:"google"`

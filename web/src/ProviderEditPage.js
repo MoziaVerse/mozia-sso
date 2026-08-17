@@ -752,9 +752,6 @@ class ProviderEditPage extends React.Component {
                 this.updateProviderField("scopes", "openid profile email");
                 this.updateProviderField("customTokenUrl", "https://door.casdoor.com/api/login/oauth/access_token");
                 this.updateProviderField("customUserInfoUrl", "https://door.casdoor.com/api/userinfo");
-              } else if (value === "HduCAS") {
-                this.updateProviderField("customAuthUrl", "https://sso.hdu.edu.cn/login");
-                this.updateProviderField("customUserInfoUrl", "https://sso.hdu.edu.cn/p3/serviceValidate");
               } else if (value === "Custom HTTP SMS") {
                 this.updateProviderField("endpoint", "https://example.com/send-custom-http-sms");
                 this.updateProviderField("method", "GET");
