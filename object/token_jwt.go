@@ -112,6 +112,7 @@ type UserWithoutThirdIdp struct {
 	PreHash           string   `xorm:"varchar(100)" json:"preHash"`
 	RegisterType      string   `xorm:"varchar(100)" json:"registerType"`
 	RegisterSource    string   `xorm:"varchar(100)" json:"registerSource"`
+	HduVerifiedAt     string   `xorm:"hdu_verified_at varchar(100)" json:"hduVerifiedAt"`
 
 	GitHub   string `xorm:"github varchar(100)" json:"github"`
 	Google   string `xorm:"varchar(100)" json:"google"`
@@ -265,6 +266,7 @@ func getUserWithoutThirdIdp(user *User) *UserWithoutThirdIdp {
 		PreHash:           user.PreHash,
 		RegisterType:      user.RegisterType,
 		RegisterSource:    user.RegisterSource,
+		HduVerifiedAt:     user.HduVerifiedAt,
 
 		GitHub:   user.GitHub,
 		Google:   user.Google,

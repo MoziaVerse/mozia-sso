@@ -247,6 +247,11 @@ class AuthCallback extends React.Component {
     const samlRequest = innerParams.get("SAMLRequest");
     const casService = innerParams.get("service");
 
+    if (params.get("ticket") !== null && providerName) {
+      const service = `${window.location.origin}/callback?state=${encodeURIComponent(params.get("state"))}`;
+      code = JSON.stringify({ticket: params.get("ticket"), service});
+    }
+
     // Telegram sends auth data as individual URL parameters
     // Collect them and convert to JSON for backend processing
     const telegramId = params.get("id");

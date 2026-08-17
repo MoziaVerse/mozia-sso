@@ -36,6 +36,9 @@ func GetUserByField(organizationName string, field string, value string) (*User,
 	if field == "" || value == "" {
 		return nil, nil
 	}
+	if field == HduCASProviderType {
+		return getExternalIdentityUser(organizationName, field, value)
+	}
 
 	user := User{Owner: organizationName}
 	existed, err := ormer.Engine.Where(fmt.Sprintf("%s=?", strings.ToLower(field)), value).Get(&user)

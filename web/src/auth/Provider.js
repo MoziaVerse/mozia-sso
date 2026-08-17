@@ -56,6 +56,9 @@ export function clearCodeVerifier(state) {
 }
 
 const authInfo = {
+  HduCAS: {
+    endpoint: "https://sso.hdu.edu.cn/login",
+  },
   Google: {
     scope: "profile+email",
     endpoint: "https://accounts.google.com/signin/oauth",
@@ -452,6 +455,11 @@ export function getAuthUrl(application, provider, method, code) {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   storeCodeVerifier(state, codeVerifier);
+
+  if (provider.type === "HduCAS") {
+    const service = `${redirectUri}?state=${encodeURIComponent(state)}`;
+    return `${provider.customAuthUrl || endpoint}?service=${encodeURIComponent(service)}`;
+  }
 
   if (provider.type === "AzureAD") {
     if (provider.domain !== "") {

@@ -121,7 +121,7 @@ export function renderOAuthProviderFields(provider, updateProviderField, renderU
         )
       }
       {
-        provider.type.startsWith("Custom") ? (
+        (provider.type.startsWith("Custom") || provider.type === "HduCAS") ? (
           <React.Fragment>
             <Col>
               <Row style={{marginTop: "20px"}} >

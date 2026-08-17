@@ -205,6 +205,8 @@ type User struct {
 	Custom8         string `xorm:"custom8 text" json:"custom8"`
 	Custom9         string `xorm:"custom9 text" json:"custom9"`
 	Custom10        string `xorm:"custom10 text" json:"custom10"`
+	HduCAS          string `xorm:"hdu_cas varchar(255) index" json:"hduCAS"`
+	HduVerifiedAt   string `xorm:"hdu_verified_at varchar(100)" json:"hduVerifiedAt"`
 
 	WebauthnCredentials []webauthn.Credential `xorm:"webauthnCredentials blob" json:"webauthnCredentials"`
 	PreferredMfaType    string                `xorm:"varchar(100)" json:"preferredMfaType"`
@@ -260,6 +262,8 @@ type Userinfo struct {
 	Groups        []string `json:"groups,omitempty"`
 	Roles         []string `json:"roles,omitempty"`
 	Permissions   []string `json:"permissions,omitempty"`
+	HduVerified   bool     `json:"hdu_verified"`
+	HduVerifiedAt string   `json:"hdu_verified_at,omitempty"`
 }
 
 type ManagedAccount struct {
@@ -1231,12 +1235,17 @@ func GetUserInfo(user *User, scope string, aud string, host string) (*Userinfo, 
 	if strings.Contains(scope, "profile") {
 		resp.RealName = user.RealName
 		resp.IsVerified = user.IsVerified
+		resp.HduVerified = user.HduVerifiedAt != ""
+		resp.HduVerifiedAt = user.HduVerifiedAt
 	}
 
 	return &resp, nil
 }
 
 func LinkUserAccount(user *User, field string, value string) (bool, error) {
+	if field == HduCASProviderType {
+		return linkHduCAS(user, value)
+	}
 	return SetUserField(user, field, value)
 }
 

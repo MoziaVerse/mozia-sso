@@ -1179,6 +1179,9 @@ export function getClickable(text) {
 }
 
 export function getProviderLogoURL(provider) {
+  if (provider.type === "HduCAS") {
+    return `${StaticBaseUrl}/img/social_custom.png`;
+  }
   if (provider.type.startsWith("Custom") && provider.customLogo) {
     return provider.customLogo;
   }
@@ -1224,6 +1227,7 @@ export function getProviderTypeOptions(category) {
         {id: "Baidu", name: "Baidu"},
         {id: "Alipay", name: "Alipay"},
         {id: "Casdoor", name: "Casdoor"},
+        {id: "HduCAS", name: "杭州电子科技大学 CAS"},
         {id: "Infoflow", name: "Infoflow"},
         {id: "Apple", name: "Apple"},
         {id: "AzureAD", name: "Azure AD"},
