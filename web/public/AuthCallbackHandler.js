@@ -282,6 +282,12 @@
     var method = innerParams.get("method");
     var samlRequest = innerParams.get("SAMLRequest");
     var code = extractCallbackCode(params);
+    if (params.get("ticket") !== null && providerName) {
+      code = JSON.stringify({
+        ticket: params.get("ticket"),
+        service: window.location.origin + "/callback?state=" + encodeURIComponent(params.get("state"))
+      });
+    }
     var responseType = getResponseType(innerParams);
     var redirectUri = window.location.origin + "/callback";
     var codeVerifier = getCodeVerifier(params.get("state"));
