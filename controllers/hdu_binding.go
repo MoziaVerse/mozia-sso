@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -170,12 +171,20 @@ func (c *ApiController) CompleteHduBinding() {
 		return
 	}
 	user, err := object.GetUser(fmt.Sprintf("%s/%s", record.UserOwner, record.UserName))
-	if err != nil || user == nil || (user.HduCAS != "" && user.HduCAS != info.Id) {
+	if err != nil || user == nil {
 		redirectWithHduStatus(c, record.ReturnURL, "failed")
+		return
+	}
+	if user.HduCAS != "" && user.HduCAS != info.Id {
+		redirectWithHduStatus(c, record.ReturnURL, "conflict")
 		return
 	}
 	if user.HduCAS == "" {
 		if _, err = object.LinkUserAccount(user, object.HduCASProviderType, info.Id); err != nil {
+			if errors.Is(err, object.ErrHduIdentityAlreadyLinked) {
+				redirectWithHduStatus(c, record.ReturnURL, "conflict")
+				return
+			}
 			redirectWithHduStatus(c, record.ReturnURL, "failed")
 			return
 		}

@@ -2,6 +2,7 @@ package object
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"github.com/casdoor/casdoor/util"
@@ -9,6 +10,8 @@ import (
 )
 
 const HduCASProviderType = "HduCAS"
+
+var ErrHduIdentityAlreadyLinked = errors.New("HDU identity is already linked")
 
 type ExternalIdentityBinding struct {
 	SubjectKey string `xorm:"varchar(64) pk" json:"-"`
@@ -57,7 +60,7 @@ func linkHduCAS(user *User, subject string) (bool, error) {
 			Owner:      user.Owner, Provider: HduCASProviderType, Subject: subject, UserName: user.Name, VerifiedAt: verifiedAt,
 		}
 		if _, err := session.Insert(&binding); err != nil {
-			return false, fmt.Errorf("HDU identity is already linked: %w", err)
+			return false, fmt.Errorf("%w: %v", ErrHduIdentityAlreadyLinked, err)
 		}
 		if _, err := session.Table(user).ID(core.PK{user.Owner, user.Name}).Update(map[string]interface{}{"hdu_cas": subject, "hdu_verified_at": verifiedAt}); err != nil {
 			return false, err
