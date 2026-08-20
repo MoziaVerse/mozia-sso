@@ -31,3 +31,37 @@ func TestIsApplicationReturnURLAllowed(t *testing.T) {
 		}
 	}
 }
+
+func TestIsHduBindingAdminClientAllowed(t *testing.T) {
+	if !isHduBindingAdminClientAllowed("mega-client", "matrix-client, mega-client") {
+		t.Fatal("expected configured Mega client to be allowed")
+	}
+	if isHduBindingAdminClientAllowed("matrix-client", "mega-client") {
+		t.Fatal("expected an unlisted client to be rejected")
+	}
+	if isHduBindingAdminClientAllowed("", "") {
+		t.Fatal("expected an empty configuration to fail closed")
+	}
+}
+
+func TestMaskHduIdentity(t *testing.T) {
+	if actual := maskHduIdentity("0220261133"); actual != "02******33" {
+		t.Fatalf("maskHduIdentity() = %q", actual)
+	}
+	if actual := maskHduIdentity("1234"); actual != "****" {
+		t.Fatalf("short identity was not fully masked: %q", actual)
+	}
+}
+
+func TestHduBindingVersionChangesWithBinding(t *testing.T) {
+	user := &object.User{Owner: "Mozia", Id: "subject-1", HduCAS: "0220261133", HduVerifiedAt: "2026-08-20T12:00:00Z"}
+	first := hduBindingVersion(user, "test-signing-key")
+	if !validHduBindingVersion(first) {
+		t.Fatalf("invalid binding version: %q", first)
+	}
+	user.HduCAS = "0220261134"
+	user.HduVerifiedAt = "2026-08-20T12:01:00Z"
+	if second := hduBindingVersion(user, "test-signing-key"); second == first {
+		t.Fatal("binding version did not change with the HDU identity")
+	}
+}

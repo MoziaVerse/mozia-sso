@@ -54,6 +54,8 @@ func InitAPI() {
 	web.Router("/api/create-hdu-binding", &controllers.ApiController{}, "POST:CreateHduBinding")
 	web.Router("/api/hdu-binding/start", &controllers.ApiController{}, "GET:StartHduBinding")
 	web.Router("/api/hdu-binding/callback", &controllers.ApiController{}, "GET:CompleteHduBinding")
+	web.Router("/api/admin/hdu-binding", &controllers.ApiController{}, "GET:GetAdminHduBinding")
+	web.Router("/api/admin/hdu-binding/unlink", &controllers.ApiController{}, "POST:UnlinkAdminHduBinding")
 	web.Router("/api/userinfo", &controllers.ApiController{}, "GET:GetUserinfo")
 	web.Router("/api/user", &controllers.ApiController{}, "GET:GetUserinfo2")
 	web.Router("/api/unlink", &controllers.ApiController{}, "POST:Unlink")

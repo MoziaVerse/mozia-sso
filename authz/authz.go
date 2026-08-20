@@ -46,6 +46,8 @@ p, *, *, POST, /api/login, *, *
 p, *, *, GET, /api/get-app-login, *, *
 p, *, *, GET, /api/hdu-binding/start, *, *
 p, *, *, GET, /api/hdu-binding/callback, *, *
+p, *, *, GET, /api/admin/hdu-binding, *, *
+p, *, *, POST, /api/admin/hdu-binding/unlink, *, *
 p, *, *, POST, /api/logout, *, *
 p, *, *, GET, /api/logout, *, *
 p, *, *, POST, /api/sso-logout, *, *

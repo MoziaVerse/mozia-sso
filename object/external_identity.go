@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/casdoor/casdoor/util"
 	"github.com/xorm-io/core"
@@ -12,6 +13,7 @@ import (
 const HduCASProviderType = "HduCAS"
 
 var ErrHduIdentityAlreadyLinked = errors.New("HDU identity is already linked")
+var ErrHduIdentityBindingChanged = errors.New("HDU identity binding changed")
 
 type ExternalIdentityBinding struct {
 	SubjectKey string `xorm:"varchar(64) pk" json:"-"`
@@ -71,6 +73,49 @@ func linkHduCAS(user *User, subject string) (bool, error) {
 	}
 	user.HduCAS = subject
 	user.HduVerifiedAt = verifiedAt
+	updated, err := getUser(user.Owner, user.Name)
+	if err != nil {
+		return false, err
+	}
+	return true, updated.UpdateUserHash()
+}
+
+// UnlinkHduCAS clears one exact HDU identity binding. The expected subject is
+// checked in the database update so an administrator cannot erase a binding
+// that changed after the confirmation screen was shown.
+func UnlinkHduCAS(user *User, expectedSubject string) (bool, error) {
+	expectedSubject = strings.TrimSpace(expectedSubject)
+	if user == nil || expectedSubject == "" {
+		return false, ErrHduIdentityBindingChanged
+	}
+
+	session := ormer.Engine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false, err
+	}
+	defer session.Rollback()
+
+	if _, err := session.
+		Where("subject_key = ? AND user_key = ?", hduIdentityKey(user.Owner, expectedSubject), hduIdentityKey(user.Owner, user.Name)).
+		Delete(&ExternalIdentityBinding{}); err != nil {
+		return false, err
+	}
+	result, err := session.Table(user).
+		Where("owner = ? AND name = ? AND hdu_cas = ?", user.Owner, user.Name, expectedSubject).
+		Update(map[string]interface{}{"hdu_cas": "", "hdu_verified_at": ""})
+	if err != nil {
+		return false, err
+	}
+	if result == 0 {
+		return false, ErrHduIdentityBindingChanged
+	}
+	if err := session.Commit(); err != nil {
+		return false, err
+	}
+
+	user.HduCAS = ""
+	user.HduVerifiedAt = ""
 	updated, err := getUser(user.Owner, user.Name)
 	if err != nil {
 		return false, err

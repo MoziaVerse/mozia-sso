@@ -1,16 +1,22 @@
 package controllers
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/casdoor/casdoor/idp"
 	"github.com/casdoor/casdoor/object"
+	"github.com/casdoor/casdoor/util"
 )
 
 const (
@@ -21,6 +27,20 @@ const (
 type createHduBindingForm struct {
 	Subject   string `json:"subject"`
 	ReturnURL string `json:"returnUrl"`
+}
+
+type unlinkHduBindingForm struct {
+	Subject        string `json:"subject"`
+	BindingVersion string `json:"bindingVersion"`
+}
+
+type hduBindingAdminView struct {
+	Subject           string `json:"subject"`
+	UserName          string `json:"userName"`
+	HduVerified       bool   `json:"hduVerified"`
+	HduVerifiedAt     string `json:"hduVerifiedAt"`
+	HduIdentityMasked string `json:"hduIdentityMasked"`
+	BindingVersion    string `json:"bindingVersion"`
 }
 
 func getBasicApplication(request *http.Request) (*object.Application, error) {
@@ -36,6 +56,60 @@ func getBasicApplication(request *http.Request) (*object.Application, error) {
 		return nil, fmt.Errorf("invalid application credentials")
 	}
 	return application, nil
+}
+
+func isHduBindingAdminClientAllowed(clientID, configured string) bool {
+	for _, candidate := range strings.Split(configured, ",") {
+		if strings.TrimSpace(candidate) == clientID && clientID != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func getHduBindingAdminApplication(request *http.Request) (*object.Application, error) {
+	application, err := getBasicApplication(request)
+	if err != nil {
+		return nil, err
+	}
+	if !isHduBindingAdminClientAllowed(application.ClientId, os.Getenv("HDU_BINDING_ADMIN_CLIENT_IDS")) {
+		return nil, fmt.Errorf("application is not allowed to administer HDU bindings")
+	}
+	return application, nil
+}
+
+func maskHduIdentity(subject string) string {
+	runes := []rune(strings.TrimSpace(subject))
+	if len(runes) <= 4 {
+		return strings.Repeat("*", len(runes))
+	}
+	return string(runes[:2]) + strings.Repeat("*", len(runes)-4) + string(runes[len(runes)-2:])
+}
+
+func hduBindingVersion(user *object.User, signingKey string) string {
+	if user == nil || user.HduCAS == "" {
+		return ""
+	}
+	value := strings.Join([]string{user.Owner, user.Id, user.HduCAS, user.HduVerifiedAt}, "\x00")
+	digest := hmac.New(sha256.New, []byte(signingKey))
+	_, _ = digest.Write([]byte(value))
+	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func newHduBindingAdminView(user *object.User, signingKey string) hduBindingAdminView {
+	return hduBindingAdminView{
+		Subject:           user.Id,
+		UserName:          user.Name,
+		HduVerified:       user.HduCAS != "",
+		HduVerifiedAt:     user.HduVerifiedAt,
+		HduIdentityMasked: maskHduIdentity(user.HduCAS),
+		BindingVersion:    hduBindingVersion(user, signingKey),
+	}
+}
+
+func validHduBindingVersion(version string) bool {
+	decoded, err := hex.DecodeString(version)
+	return err == nil && len(decoded) == sha256.Size
 }
 
 func urlOrigin(raw string) (string, bool) {
@@ -190,4 +264,84 @@ func (c *ApiController) CompleteHduBinding() {
 		}
 	}
 	redirectWithHduStatus(c, record.ReturnURL, "success")
+}
+
+func (c *ApiController) GetAdminHduBinding() {
+	application, err := getHduBindingAdminApplication(c.Ctx.Request)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusUnauthorized)
+		c.ResponseError("invalid HDU binding administrator credentials")
+		return
+	}
+	subject := strings.TrimSpace(c.Ctx.Input.Query("subject"))
+	if subject == "" || utf8.RuneCountInString(subject) > 255 {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.ResponseError("invalid subject")
+		return
+	}
+	user, err := object.GetUserByField(application.Organization, "id", subject)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.ResponseError("failed to read HDU binding")
+		return
+	}
+	if user == nil {
+		c.Ctx.Output.SetStatus(http.StatusNotFound)
+		c.ResponseError("user not found")
+		return
+	}
+	c.ResponseOk(newHduBindingAdminView(user, application.ClientSecret))
+}
+
+func (c *ApiController) UnlinkAdminHduBinding() {
+	application, err := getHduBindingAdminApplication(c.Ctx.Request)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusUnauthorized)
+		c.ResponseError("invalid HDU binding administrator credentials")
+		return
+	}
+	var form unlinkHduBindingForm
+	if err = json.Unmarshal(c.Ctx.Input.RequestBody, &form); err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.ResponseError("invalid HDU unlink request")
+		return
+	}
+	form.Subject = strings.TrimSpace(form.Subject)
+	if form.Subject == "" || utf8.RuneCountInString(form.Subject) > 255 {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.ResponseError("invalid HDU unlink request")
+		return
+	}
+	user, err := object.GetUserByField(application.Organization, "id", form.Subject)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.ResponseError("failed to read HDU binding")
+		return
+	}
+	if user == nil {
+		c.Ctx.Output.SetStatus(http.StatusNotFound)
+		c.ResponseError("user not found")
+		return
+	}
+	if user.HduCAS == "" {
+		c.ResponseOk(map[string]bool{"unlinked": false, "alreadyUnlinked": true})
+		return
+	}
+	if !validHduBindingVersion(form.BindingVersion) || subtle.ConstantTimeCompare([]byte(form.BindingVersion), []byte(hduBindingVersion(user, application.ClientSecret))) != 1 {
+		c.Ctx.Output.SetStatus(http.StatusConflict)
+		c.ResponseError("HDU identity binding changed")
+		return
+	}
+	if _, err = object.UnlinkHduCAS(user, user.HduCAS); err != nil {
+		if errors.Is(err, object.ErrHduIdentityBindingChanged) {
+			c.Ctx.Output.SetStatus(http.StatusConflict)
+			c.ResponseError("HDU identity binding changed")
+			return
+		}
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.ResponseError("failed to unlink HDU identity")
+		return
+	}
+	util.LogInfo(c.Ctx, "API: application [%s] unlinked HDU identity from user [%s]", application.ClientId, user.Id)
+	c.ResponseOk(map[string]bool{"unlinked": true, "alreadyUnlinked": false})
 }
