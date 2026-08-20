@@ -123,7 +123,7 @@ func (c *ApiController) CreateHduBinding() {
 		c.ResponseError("HDU identity is already verified")
 		return
 	}
-	token, err := object.CreateHduBindingTicket(application, user, form.ReturnURL, requestOrigin(c.Ctx.Request))
+	token, err := object.CreateHduBindingTicket(user, form.ReturnURL, requestOrigin(c.Ctx.Request))
 	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.ResponseError("failed to create HDU binding ticket")
