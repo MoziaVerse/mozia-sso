@@ -65,3 +65,10 @@ func TestHduBindingVersionChangesWithBinding(t *testing.T) {
 		t.Fatal("binding version did not change with the HDU identity")
 	}
 }
+
+func TestGetHduBindingAdminOrganization(t *testing.T) {
+	t.Setenv("HDU_BINDING_ADMIN_ORGANIZATION", " Mozia ")
+	if actual := getHduBindingAdminOrganization(&object.Application{Organization: "mozia-internal"}); actual != "Mozia" {
+		t.Fatalf("expected configured organization, got %q", actual)
+	}
+}

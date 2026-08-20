@@ -78,6 +78,13 @@ func getHduBindingAdminApplication(request *http.Request) (*object.Application, 
 	return application, nil
 }
 
+func getHduBindingAdminOrganization(application *object.Application) string {
+	if organization := strings.TrimSpace(os.Getenv("HDU_BINDING_ADMIN_ORGANIZATION")); organization != "" {
+		return organization
+	}
+	return application.Organization
+}
+
 func maskHduIdentity(subject string) string {
 	runes := []rune(strings.TrimSpace(subject))
 	if len(runes) <= 4 {
@@ -279,7 +286,7 @@ func (c *ApiController) GetAdminHduBinding() {
 		c.ResponseError("invalid subject")
 		return
 	}
-	user, err := object.GetUserByField(application.Organization, "id", subject)
+	user, err := object.GetUserByField(getHduBindingAdminOrganization(application), "id", subject)
 	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.ResponseError("failed to read HDU binding")
@@ -312,7 +319,7 @@ func (c *ApiController) UnlinkAdminHduBinding() {
 		c.ResponseError("invalid HDU unlink request")
 		return
 	}
-	user, err := object.GetUserByField(application.Organization, "id", form.Subject)
+	user, err := object.GetUserByField(getHduBindingAdminOrganization(application), "id", form.Subject)
 	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.ResponseError("failed to read HDU binding")
