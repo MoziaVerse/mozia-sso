@@ -93,6 +93,10 @@ func maskHduIdentity(subject string) string {
 	return string(runes[:2]) + strings.Repeat("*", len(runes)-4) + string(runes[len(runes)-2:])
 }
 
+func hasHduIdentityBinding(user *object.User) bool {
+	return user != nil && strings.TrimSpace(user.HduCAS) != ""
+}
+
 func hduBindingVersion(user *object.User, signingKey string) string {
 	if user == nil || user.HduCAS == "" {
 		return ""
@@ -107,7 +111,7 @@ func newHduBindingAdminView(user *object.User, signingKey string) hduBindingAdmi
 	return hduBindingAdminView{
 		Subject:           user.Id,
 		UserName:          user.Name,
-		HduVerified:       user.HduCAS != "",
+		HduVerified:       hasHduIdentityBinding(user),
 		HduVerifiedAt:     user.HduVerifiedAt,
 		HduIdentityMasked: maskHduIdentity(user.HduCAS),
 		BindingVersion:    hduBindingVersion(user, signingKey),
@@ -200,7 +204,7 @@ func (c *ApiController) CreateHduBinding() {
 		c.ResponseError("user not found")
 		return
 	}
-	if user.HduVerifiedAt != "" {
+	if hasHduIdentityBinding(user) {
 		c.Ctx.Output.SetStatus(http.StatusConflict)
 		c.ResponseError("HDU identity is already verified")
 		return

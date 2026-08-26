@@ -53,6 +53,17 @@ func TestMaskHduIdentity(t *testing.T) {
 	}
 }
 
+func TestHasHduIdentityBindingUsesBindingValue(t *testing.T) {
+	user := &object.User{HduVerifiedAt: "2026-08-20T12:00:00Z"}
+	if hasHduIdentityBinding(user) {
+		t.Fatal("stale verification time must not count as an HDU identity binding")
+	}
+	user.HduCAS = "0220261133"
+	if !hasHduIdentityBinding(user) {
+		t.Fatal("expected the HDU identity value to count as a binding")
+	}
+}
+
 func TestHduBindingVersionChangesWithBinding(t *testing.T) {
 	user := &object.User{Owner: "Mozia", Id: "subject-1", HduCAS: "0220261133", HduVerifiedAt: "2026-08-20T12:00:00Z"}
 	first := hduBindingVersion(user, "test-signing-key")
