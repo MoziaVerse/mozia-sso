@@ -41,6 +41,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func generateHduCasSignupIdentity(application *object.Application) (string, string, error) {
+	id, err := object.GenerateIdForNewUser(application)
+	if err != nil {
+		return "", "", err
+	}
+	return id, "mozia_" + util.GenerateId()[:8], nil
+}
+
 func codeToResponse(code *object.Code) *Response {
 	if code.Code == "" {
 		return &Response{Status: "error", Msg: code.Message, Data: code.Code}
@@ -928,6 +936,16 @@ func (c *ApiController) Login() {
 					if organization.UseEmailAsUsername && userInfo.Email != "" {
 						userInfo.Username = userInfo.Email
 					}
+					userId := userInfo.Id
+					if provider.Type == object.HduCASProviderType {
+						userId, userInfo.Username, err = generateHduCasSignupIdentity(application)
+						if err != nil {
+							c.ResponseError(err.Error())
+							return
+						}
+					} else if userId == "" {
+						userId = util.GenerateId()
+					}
 
 					// Handle username conflicts
 					var tmpUser *object.User
@@ -963,11 +981,6 @@ func (c *ApiController) Login() {
 					if err != nil {
 						c.ResponseError(fmt.Errorf(c.T("account:Get init score failed, error: %w"), err).Error())
 						return
-					}
-
-					userId := userInfo.Id
-					if userId == "" {
-						userId = util.GenerateId()
 					}
 
 					user = &object.User{
