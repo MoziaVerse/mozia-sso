@@ -464,7 +464,12 @@ func checkMfaEnable(c *ApiController, user *object.User, organization *object.Or
 	return false
 }
 
-func getExistUserByBindingRule(providerItem *object.ProviderItem, application *object.Application, userInfo *idp.UserInfo) (user *object.User, err error) {
+func getExistUserByBindingRule(providerType string, providerItem *object.ProviderItem, application *object.Application, userInfo *idp.UserInfo) (user *object.User, err error) {
+	// HDU CAS only uses explicit identity bindings; profile claims must not join accounts.
+	if providerType == object.HduCASProviderType {
+		return nil, nil
+	}
+
 	if providerItem.BindingRule == nil {
 		providerItem.BindingRule = &[]string{"Email", "Phone", "Name"}
 	}
@@ -904,7 +909,7 @@ func (c *ApiController) Login() {
 				c.Ctx.Input.SetParam("recordUserId", user.GetId())
 			} else if provider.Category == "OAuth" || provider.Category == "Web3" || provider.Category == "SAML" {
 				// Sign up via OAuth
-				user, err = getExistUserByBindingRule(providerItem, application, userInfo)
+				user, err = getExistUserByBindingRule(provider.Type, providerItem, application, userInfo)
 				if err != nil {
 					c.ResponseError(err.Error())
 					return

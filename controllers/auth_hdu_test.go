@@ -19,3 +19,13 @@ func TestGenerateHduCasSignupIdentity(t *testing.T) {
 		t.Fatalf("expected Matrix-style generated username, got %q", username)
 	}
 }
+
+func TestHduCasSignupDoesNotMatchExistingUsersByProfile(t *testing.T) {
+	user, err := getExistUserByBindingRule(object.HduCASProviderType, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user != nil {
+		t.Fatal("HDU CAS signup must not match an existing user by email, phone, or name")
+	}
+}
