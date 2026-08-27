@@ -49,6 +49,18 @@ func generateHduCasSignupIdentity(application *object.Application) (string, stri
 	return id, "mozia_" + util.GenerateId()[:8], nil
 }
 
+func useHduCasPlatformName(userInfo *idp.UserInfo, name string) {
+	userInfo.Username = name
+	userInfo.DisplayName = name
+}
+
+func repairGeneratedHduCasPlatformName(userInfo *idp.UserInfo, user *object.User) {
+	if strings.HasPrefix(user.Name, "mozia_") && user.HduCAS != "" && user.DisplayName == user.HduCAS {
+		useHduCasPlatformName(userInfo, user.Name)
+		user.DisplayName = user.Name
+	}
+}
+
 func codeToResponse(code *object.Code) *Response {
 	if code.Code == "" {
 		return &Response{Status: "error", Msg: code.Message, Data: code.Code}
@@ -893,6 +905,11 @@ func (c *ApiController) Login() {
 
 			if user != nil && !user.IsDeleted {
 				// Sign in via OAuth (want to sign up but already have account)
+				// Repair HDU-created accounts whose generated platform name was previously
+				// paired with a student-number display name. Custom display names are preserved.
+				if provider.Type == object.HduCASProviderType {
+					repairGeneratedHduCasPlatformName(userInfo, user)
+				}
 				// sync info from 3rd-party if possible
 				_, err = object.SetUserOAuthProperties(organization, user, provider.Type, userInfo, token, provider.UserMapping)
 				if err != nil {
@@ -943,11 +960,13 @@ func (c *ApiController) Login() {
 					}
 					userId := userInfo.Id
 					if provider.Type == object.HduCASProviderType {
-						userId, userInfo.Username, err = generateHduCasSignupIdentity(application)
+						var platformName string
+						userId, platformName, err = generateHduCasSignupIdentity(application)
 						if err != nil {
 							c.ResponseError(err.Error())
 							return
 						}
+						useHduCasPlatformName(userInfo, platformName)
 					} else if userId == "" {
 						userId = util.GenerateId()
 					}
