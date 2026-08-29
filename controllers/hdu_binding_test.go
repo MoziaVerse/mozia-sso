@@ -44,15 +44,6 @@ func TestIsHduBindingAdminClientAllowed(t *testing.T) {
 	}
 }
 
-func TestMaskHduIdentity(t *testing.T) {
-	if actual := maskHduIdentity("0220261133"); actual != "02******33" {
-		t.Fatalf("maskHduIdentity() = %q", actual)
-	}
-	if actual := maskHduIdentity("1234"); actual != "****" {
-		t.Fatalf("short identity was not fully masked: %q", actual)
-	}
-}
-
 func TestHasHduIdentityBindingUsesBindingValue(t *testing.T) {
 	user := &object.User{HduVerifiedAt: "2026-08-20T12:00:00Z"}
 	if hasHduIdentityBinding(user) {
@@ -61,6 +52,17 @@ func TestHasHduIdentityBindingUsesBindingValue(t *testing.T) {
 	user.HduCAS = "0220261133"
 	if !hasHduIdentityBinding(user) {
 		t.Fatal("expected the HDU identity value to count as a binding")
+	}
+}
+
+func TestHduBindingAdminViewReturnsFullIdentity(t *testing.T) {
+	view := newHduBindingAdminView(&object.User{
+		Owner:  "Mozia",
+		Id:     "subject-1",
+		HduCAS: "0220261133",
+	}, "test-signing-key")
+	if view.HduIdentity != "0220261133" {
+		t.Fatalf("expected full HDU identity, got %q", view.HduIdentity)
 	}
 }
 

@@ -35,12 +35,12 @@ type unlinkHduBindingForm struct {
 }
 
 type hduBindingAdminView struct {
-	Subject           string `json:"subject"`
-	UserName          string `json:"userName"`
-	HduVerified       bool   `json:"hduVerified"`
-	HduVerifiedAt     string `json:"hduVerifiedAt"`
-	HduIdentityMasked string `json:"hduIdentityMasked"`
-	BindingVersion    string `json:"bindingVersion"`
+	Subject        string `json:"subject"`
+	UserName       string `json:"userName"`
+	HduVerified    bool   `json:"hduVerified"`
+	HduVerifiedAt  string `json:"hduVerifiedAt"`
+	HduIdentity    string `json:"hduIdentity"`
+	BindingVersion string `json:"bindingVersion"`
 }
 
 func getBasicApplication(request *http.Request) (*object.Application, error) {
@@ -85,14 +85,6 @@ func getHduBindingAdminOrganization(application *object.Application) string {
 	return application.Organization
 }
 
-func maskHduIdentity(subject string) string {
-	runes := []rune(strings.TrimSpace(subject))
-	if len(runes) <= 4 {
-		return strings.Repeat("*", len(runes))
-	}
-	return string(runes[:2]) + strings.Repeat("*", len(runes)-4) + string(runes[len(runes)-2:])
-}
-
 func hasHduIdentityBinding(user *object.User) bool {
 	return user != nil && strings.TrimSpace(user.HduCAS) != ""
 }
@@ -109,12 +101,12 @@ func hduBindingVersion(user *object.User, signingKey string) string {
 
 func newHduBindingAdminView(user *object.User, signingKey string) hduBindingAdminView {
 	return hduBindingAdminView{
-		Subject:           user.Id,
-		UserName:          user.Name,
-		HduVerified:       hasHduIdentityBinding(user),
-		HduVerifiedAt:     user.HduVerifiedAt,
-		HduIdentityMasked: maskHduIdentity(user.HduCAS),
-		BindingVersion:    hduBindingVersion(user, signingKey),
+		Subject:        user.Id,
+		UserName:       user.Name,
+		HduVerified:    hasHduIdentityBinding(user),
+		HduVerifiedAt:  user.HduVerifiedAt,
+		HduIdentity:    strings.TrimSpace(user.HduCAS),
+		BindingVersion: hduBindingVersion(user, signingKey),
 	}
 }
 
