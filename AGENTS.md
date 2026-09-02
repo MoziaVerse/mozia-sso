@@ -26,10 +26,10 @@ Runtime boundaries:
 
 ## Reseller Domain Changes
 
-- Mega can edit a reseller access Host, but that action updates the logical Host binding in `mozia-api`; it does not update SSO configuration.
+- Mega can edit a reseller Matrix Host, but that action updates the logical Host binding in `mozia-api`; Matrix resolves it dynamically.
 - Every reseller domain used for login must have the exact `https://<host>/api/auth/callback` URI allowed on the dedicated `matrix-reseller` OIDC client before cutover.
-- A complete domain switch therefore requires coordinated DNS, reverse proxy/TLS, `mozia-api` Host binding, and SSO redirect URI configuration. Do not treat any one of those steps as completing the others.
-- Keep Matrix, Mega, and reseller redirect URIs on their intended clients. Never solve a domain change by reusing another application's client secret or wildcarding redirects without an explicit security review.
+- A complete Matrix domain switch requires DNS or a customer reverse proxy/TLS plus the `mozia-api` Host binding. Matrix custom domains return through its signed OAuth proxy, so its OIDC client keeps only the exact canonical callback and does not add one redirect per reseller domain.
+- Keep Matrix, Mega, and reseller-management redirect URIs on their intended clients. Never solve a domain change by reusing another application's client secret or wildcarding redirects without an explicit security review.
 - Reseller Logo is not SSO data. It is stored by `mozia-api` and rendered by `matrix-reseller`; no Logo copy belongs in this repository.
 
 ## Change Rules
