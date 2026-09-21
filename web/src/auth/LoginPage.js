@@ -904,7 +904,7 @@ class LoginPage extends React.Component {
           {isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) && (
             <div>
               {application.enableSignUp && <p className="phone-signup-notice">{i18next.t("login:Phone signup notice")}</p>}
-              {AgreementModal.renderAgreementFormItem(application, true, {}, this)}
+              {(application.enableSignUp || AgreementModal.isAgreementRequired(application)) && AgreementModal.renderAgreementFormItem(application, true, {}, this)}
             </div>
           )}
           <Button

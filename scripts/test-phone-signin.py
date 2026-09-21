@@ -111,9 +111,9 @@ def body(phone, code, **extra):
     }
 
 
-def authenticate(phone, code):
+def authenticate(phone, code, **extra):
     client, jar = browser()
-    _, result = call(client, login_path, body(phone, code))
+    _, result = call(client, login_path, body(phone, code, **extra))
     assert result.get("status") == "ok", result.get("msg")
     _, tokens = call(client, "/api/login/oauth/access_token", {
         "grant_type": "authorization_code", "client_id": client_id,
@@ -187,7 +187,7 @@ assert call(browser()[0], login_path, body("13800138000", "789012"))[1]["status"
 sql(f"UPDATE \"user\" SET is_forbidden=false WHERE owner={quoted(fixture)} AND phone='13800138000'")
 sql(f"UPDATE application SET enable_sign_up=false WHERE name={quoted(fixture)}")
 seed("13800138000", "890123")
-assert authenticate("13800138000", "890123")[2] == subject
+assert authenticate("13800138000", "890123", agreement=False)[2] == subject
 sql(f"UPDATE application SET enable_sign_up=true, enable_phone_signin_signup=false WHERE name={quoted(fixture)}")
 seed("13800138000", "901234")
 assert call(browser()[0], login_path, body("13800138000", "901234", phoneSigninSignup=False))[1]["status"] == "ok"

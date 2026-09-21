@@ -15,10 +15,24 @@ func validatePhoneSignin(app *object.Application, input *form.AuthForm) error {
 	if !app.EnablePhoneSigninSignup || app.DisableSignin || !app.IsCodeSigninViaSmsEnabled() || app.Organization == "built-in" || app.Organization != input.Organization {
 		return fmt.Errorf("此应用未启用手机号一体登录")
 	}
-	if input.PhoneSigninSignup && !input.Agreement {
+	if input.PhoneSigninSignup && phoneSigninNeedsAgreement(app) && !input.Agreement {
 		return fmt.Errorf("请先同意用户协议和隐私政策")
 	}
 	return nil
+}
+
+// Registration requires consent; login-only organizations retain their existing
+// sign-in agreement policy instead of gaining a registration checkbox.
+func phoneSigninNeedsAgreement(app *object.Application) bool {
+	if app.EnableSignUp {
+		return true
+	}
+	for _, item := range app.SignupItems {
+		if item.Name == "Agreement" && item.Required && item.Rule != "" && item.Rule != "None" {
+			return true
+		}
+	}
+	return false
 }
 
 func phoneSignupForm(input form.AuthForm) (form.AuthForm, error) {

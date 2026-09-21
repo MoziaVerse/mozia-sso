@@ -45,3 +45,20 @@ func TestPhoneSigninPolicyDoesNotEnableOtherOrganizationsOrApplications(t *testi
 		t.Fatal("disabled feature accepted")
 	}
 }
+
+func TestPhoneLoginOnlyDoesNotRequireRegistrationConsent(t *testing.T) {
+	app := &object.Application{Organization: "internal", EnablePhoneSigninSignup: true, SigninMethods: []*object.SigninMethod{{Name: "Verification code", Rule: "Phone only"}}}
+	input := &form.AuthForm{Organization: "internal", PhoneSigninSignup: true}
+	if err := validatePhoneSignin(app, input); err != nil {
+		t.Fatal(err)
+	}
+	app.EnableSignUp = true
+	if err := validatePhoneSignin(app, input); err == nil {
+		t.Fatal("registration accepted without consent")
+	}
+	app.EnableSignUp = false
+	app.SignupItems = []*object.SignupItem{{Name: "Agreement", Required: true, Rule: "Signin (Default False)"}}
+	if err := validatePhoneSignin(app, input); err == nil {
+		t.Fatal("ignored configured sign-in agreement")
+	}
+}
