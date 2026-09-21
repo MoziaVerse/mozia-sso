@@ -332,3 +332,7 @@ for bad in ["http://127.0.0.1:29999/callback", "https://evil.test/?next=" + call
 r = silent(consumer, {**silent_params,"state":"silent-authenticated"})
 assert r.status == 302 and "code=" in r.headers["Location"]
 print("PASS silent OIDC: anonymous login_required, encoded state, strict callback rejection, authenticated code")
+
+r = silent(consumer, {**silent_params,"provider_hint":"explicit-provider"})
+assert r.status == 302 and "error=interaction_required" in r.headers["Location"] and "code=" not in r.headers["Location"]
+print("PASS explicit provider action is not bypassed by automatic SSO")

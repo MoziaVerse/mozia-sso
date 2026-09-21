@@ -55,6 +55,10 @@ func getWebBuildFolder() string {
 }
 
 func fastAutoSignin(ctx *context.Context) (string, error) {
+	// An explicit provider action (for example university verification) must still visit that provider.
+	if ctx.Input.Query("provider_hint") != "" {
+		return "", nil
+	}
 	userId := getSessionUser(ctx)
 	if userId == "" {
 		return "", nil
