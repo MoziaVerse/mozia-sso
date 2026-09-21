@@ -1,48 +1,45 @@
-# 测试服 Casdoor 手机号统一认证验收
+# 测试服统一认证验收（2026-09-21，修正后的方案）
 
-日期：2026-09-21。环境：matrix-test；生产未变更。代码来自 PR #4，尚未合并。
+## 当前部署
 
-## 发布范围
+- Casdoor：`mozia-sso:test-593bf9c6`，测试服 8778；保留原生 Casdoor 外观，撤掉 Matrix 视觉迁移。
+- Matrix：`e86c3c6`，原登录页 4000、后端 3257；`CASDOOR_UNIFIED_AUTH=true`，前端启用测试服分端口配置。
+- Matrix Casdoor 应用仅允许 `http://116.136.189.21:4000` 发起嵌入认证交接；原组织、client 和 sub 保持不变。
+- Casdoor 文件会话持久化到 `~/app/mozia-sso/session-data:/tmp`，已有会话从原容器复制保留。
+- 生产未部署、未改配置。
 
-- Casdoor 后端及 Matrix 风格前端部署到测试服 8778 端口。
-- 新增 application.enable_phone_signin_signup 和 verification_record.failed_attempts 两个字段；未迁移、删除或重建用户。
-- 8 个应用中仅 admin/mozia-matrix 开启一体模式，展示名称改为 Matrix；另外 7 个应用保持关闭。
-- 保留原组织、client、短信供应商、国际区号、协议和回调允许列表；未新增回调规则。
-- Matrix 自身登录入口及 Canvas、TTS、MoziaReel 尚未切换。
+变更 PR：MoziaVerse/mozia-sso#4、MoziaVerse/matrix#218，均保持草稿。
 
-## 发布与回退
-
-原版本 db763bc0。保留原 compose、conf、受限权限的数据库备份和旧镜像标签；没有在仓库保存凭据、用户号码或验证码。
-
-源码在测试服独立 release worktree，运行配置仍使用 ~/app/mozia-sso。基础镜像下载过慢，因此采用原运行时镜像，加本地从源码交叉编译的 Linux amd64 静态程序和正式前端构建。编译器为本机 Go 1.27.1；Dockerfile 标准构建使用 Go 1.25.8，此次未完成标准 Dockerfile 全量构建。
-
-先在仅本机可访问的 18778 端口启动候选容器，核对程序 SHA-256、增量字段和开关默认值，再替换主测试容器。旁路容器已删除。正式程序 SHA-256 为 b95a116c5ecc53ac806fb4ea8b06a0258212753897defad3bfe202ea88077431。
-
-回退脚本：测试服 ~/app/mozia-sso-backups/20260921-phone-97629ff3/rollback.sh。恢复旧应用开关、展示名与旧镜像；保留增量字段及已创建身份。未执行整库回滚，也未在验收后重放回退脚本。
-
-## 实际验收
+## 本次真实浏览器验收
 
 | 场景 | 结果 |
 | --- | --- |
-| 新版本、所有开关关闭 | 原用户名密码／验证码标签、独立注册链接正常；新布局未出现 |
-| 只开启 Matrix 应用 | API 与浏览器确认新布局；Mega 开关保持关闭；全库仅 1/8 开启 |
-| 真实短信 | 用户提供受控号码，实际发码成功，用户回传收到的验证码 |
-| 真实老账号登录 | 完成手机号验证码认证及授权码回调；该号码在测试库原已有账号，不将此项记作真实新用户注册 |
-| PKCE 和 state | 回调校验 state，并用原 verifier 成功换取令牌 |
-| ID token | 使用测试服 JWKS 验签；issuer、audience、nonce 校验通过 |
-| userinfo | 返回 subject 与已验签 ID token 一致 |
-| Casdoor 会话 | 再次进入授权页，点击已有身份继续，无需重新发短信；再次回调与验签通过，subject 与第一次一致 |
-| 旧注册链接 | /signup/mozia-matrix 显示统一表单 |
-| 小屏及账号页 | 390px 手机页无横向溢出；实际应用自定义 CSS 的固定 320px 找回密码行已用局部样式约束为表单宽度 |
+| Matrix 原页面短信登录 | 用户受控号码实际收到短信并提供验证码；在 Matrix 原表单完成认证，自动回到工作台 |
+| 账号与业务数据 | 原账号继续使用；工作台、余额等正常读取；本次是真实老用户登录，不冒称真实新用户注册 |
+| 浏览器 SSO | 带浏览器 cookie 请求 Casdoor userinfo 成功，sub 与 Matrix `/api/me` 一致；回跳临时状态已消费 |
+| TTS Studio | 从 `/launch/tts-studio` 进入测试服 3260 工作台，交接 fragment 已消费，无再次验证码 |
+| MoziaReel | 从 `/launch/mozia-reel` 进入测试服 1241 项目页，交接 fragment 已消费，无再次验证码 |
+| Canvas | 从 `/launch/zeo-canvas` 进入测试服 13000 项目库，原账号与页面正常，交接 fragment 已消费 |
+| 容器替换后会话 | 强制重建同一新版 Casdoor 容器后，浏览器仍能读取 userinfo，sub 与 Matrix 一致 |
+| 回跳边界 | 测试服 Matrix 对与真实 Origin 不匹配的回跳地址返回 400；Casdoor 拒绝无效浏览器交接票据 |
+| 原生托管页 | `/signup/mozia-matrix` 恢复原生 Casdoor 手机／账号表单；应用 Logo 使用已有 Matrix 图标资源 |
 
-回调接收器运行在本机，仅使用既有 localhost 回调规则。这证明测试服 Casdoor 的完整认证与授权链，不等于已验证 Matrix 业务用户创建、余额、邀请或三个子应用会话。
+未点击任何生成、消费或付费功能。手机号、验证码、票据和具体 subject 不写入验收文档。
 
-## 已发现的部署限制
+## 修复的测试配置偏差
 
-测试配置未设置 redisEndpoint，现有 main.go 因而使用容器内 ./tmp 文件会话，当前 compose 仅持久化 /conf。最终前端修补重建容器后，测试浏览器不再出现已有身份继续入口，需要重新登录。前述二次授权验证是在同一容器生命周期内完成；不能据此宣称跨部署保留 SSO 会话。生产切换前应评估并验证文件目录持久化或 Redis 会话方案，本次没有修改共享会话基础设施。
+测试 Matrix 原生产构建向 4000 的 `/api` 发请求，实际 404，后端在 3257。新增显式测试构建开关 `BUN_PUBLIC_SPLIT_ORIGIN_API=true`；生产默认同源行为不变。
 
-## 下一阶段
+测试 Canvas 进程沿用生产认证配置：`MATRIX_BACKEND_URL` 指向生产 Matrix，前端地址为生产域名，并使用 Secure cookie。导致测试票据在生产侧换票报 400。新增测试专用 `~/app/mozia-canvas/test-auth.env` 覆盖后端、前端、应用 origin 与 HTTP cookie 设置，保留原 `prod.env`；仅重启测试 Canvas，未改其代码或生产实例。
 
-- Matrix 测试服改用浏览器 OIDC 跳转，验证业务身份、钱包、增长邀请和代理商归属；随后逐个接入三个子应用。
-- 真实新号码注册、MFA／第三方身份提供方回归、协议版本留痕仍待完成；新用户注册目前有隔离数据库及短信模拟供应商验证，不能替代上述真实路径。
-- 生产仍保持原入口；当前测试服使用现有 HTTP 地址，生产切换需保留 HTTPS 与精确回调约束。
+## 回滚
+
+部署前备份位于测试服 `~/app/mozia-sso-backups/20260921-embedded-593bf9c6`，权限仅服务账号可读，包含 SSO 数据库、原 compose、Matrix 配置与 Canvas 原配置。
+
+优先将 Matrix 后端 `CASDOOR_UNIFIED_AUTH=false` 并按原命令重启，旧认证路径仍可用。若回滚前端代码，测试分端口配置也需一起处理，不能恢复到已知 `/api` 404 的组合。SSO 镜像可回到 `test-040d106d`，但应保留新增的 `/tmp` 会话持久化卷；增量表无需删除。Canvas 回退只需移除测试覆盖，但会恢复已确认的跨环境握手错误。
+
+## 尚未完成
+
+- MoSpace 已有独立 Casdoor client，保持原组织与原跳转关系。其协议地址为空，已向用户询问；在可展示的协议明确前，暂未开启它的手机号一体注册开关。
+- 真实新手机号、增长邀请码奖励、代理商首次自动归属、MFA 与第三方身份提供方仍未做真实端到端验收。新注册及禁用／并发等在一次性 PostgreSQL 和本机短信桩完成 HTTP 回归。
+- 各产品退出会话仍独立，未改为全平台强制退出。
