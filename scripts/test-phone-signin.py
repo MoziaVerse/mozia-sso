@@ -56,6 +56,8 @@ copy_fixture("organization", "built-in", {
 copy_fixture("application", "app-built-in", {
     "name": fixture, "organization": fixture, "enable_phone_signin_signup": True,
     "enable_sign_up": True, "enable_signin_session": True, "enable_auto_signin": True,
+    # Application tags restrict login; public applications must not use them as categories.
+    "tags": "[]",
     "client_id": client_id, "client_secret": client_secret, "cert": "cert-built-in",
     "redirect_uris": json.dumps([callback]),
     "signin_methods": json.dumps([{"name": "Verification code", "rule": "Phone only"}, {"name": "Password", "rule": "All"}]),
@@ -136,6 +138,32 @@ client, jar, old_subject = authenticate("13800138000", "234567")
 assert old_subject == subject
 assert sql(f"SELECT count(*) FROM \"user\" WHERE owner={quoted(fixture)} AND phone='13800138000'") == "1"
 print("PASS new/old phone: stable sub, PKCE, nonce, Session and replay rejection")
+
+# Exercise the public portal's direct login, independently of OAuth or an existing session.
+portal_phone = "13800138001"
+portal_subject = None
+for code in ("102030", "203040"):
+    seed(portal_phone, code)
+    portal, _ = browser()
+    _, result = call(portal, "/api/login", body(portal_phone, code, type="login"))
+    assert result.get("status") == "ok", result.get("msg")
+    current_subject = json.load(portal.open(BASE + "/api/userinfo"))["sub"]
+    assert portal_subject in (None, current_subject)
+    portal_subject = current_subject
+assert sql(f"SELECT count(*) FROM \"user\" WHERE owner={quoted(fixture)} AND phone={quoted(portal_phone)} AND is_admin=false AND tag=''") == "1"
+
+# Reproduce the accidental category-as-allowlist setting, then prove the scoped fix.
+sql(f"UPDATE application SET tags='[\"portal-category\"]' WHERE name={quoted(fixture)}")
+seed(portal_phone, "304050")
+_, denied = call(browser()[0], "/api/login", body(portal_phone, "304050", type="login"))
+assert (denied or {}).get("status") != "ok", "Application tag restrictions must still reject ordinary users"
+sql(f"UPDATE application SET tags='[]' WHERE name={quoted(fixture)}")
+seed(portal_phone, "405060")
+portal, _ = browser()
+_, result = call(portal, "/api/login", body(portal_phone, "405060", type="login"))
+assert result.get("status") == "ok", result.get("msg")
+assert json.load(portal.open(BASE + "/api/userinfo"))["sub"] == portal_subject
+print("PASS public portal: ordinary new/old phone login, tag restriction rejection and recovery with stable sub")
 
 challenge = seed("13900139000", "345678")
 assert call(client, login_path, body("13900139000", "345678", agreement=False))[1]["status"] == "error"
