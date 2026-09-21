@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import React, {Suspense, lazy} from "react";
-import "./MatrixLogin.less";
 import {Button, Checkbox, Col, Form, Input, Result, Spin, Tabs, message} from "antd";
 import {ArrowLeftOutlined, LockOutlined, UserOutlined} from "@ant-design/icons";
 import {withRouter} from "react-router-dom";
@@ -673,9 +672,6 @@ class LoginPage extends React.Component {
     const resultItemKey = `${application.organization}_${application.name}_${signinItem.name}`;
 
     if (signinItem.name === "Logo") {
-      if (unifiedPhoneMethod(application)) {
-        return null;
-      }
       return (
         <div key={resultItemKey} className="login-logo-box">
           <div dangerouslySetInnerHTML={{__html: ("<style>" + signinItem.customCss?.replaceAll("<style>", "").replaceAll("</style>", "") + "</style>")}} />
@@ -730,7 +726,7 @@ class LoginPage extends React.Component {
       }
 
       if (this.state.loginMethod === "verificationCodePhone") {
-        return <Form.Item className="signin-phone" required={true} label={unifiedPhoneMethod(application) ? i18next.t("general:Phone") : null} htmlFor="normal_login_username">
+        return <Form.Item className="signin-phone" required={true}>
           <Input.Group compact>
             <Form.Item
               name="countryCode"
@@ -793,7 +789,7 @@ class LoginPage extends React.Component {
           <Form.Item
             name="username"
             className="login-username"
-            label={signinItem.label || (unifiedPhoneMethod(application) ? i18next.t("forget:Account") : null)}
+            label={signinItem.label ? signinItem.label : null}
             rules={[
               {
                 required: this.state.loginMethod !== "webAuthn",
@@ -1063,7 +1059,6 @@ class LoginPage extends React.Component {
       return (
         <Form
           name="normal_login"
-          layout={unifiedPhoneMethod(application) ? "vertical" : undefined}
           initialValues={{
             organization: application.organization,
             application: application.name,
@@ -1400,7 +1395,7 @@ class LoginPage extends React.Component {
             <Form.Item
               name="password"
               className="login-password"
-              label={signinItem.label || (unifiedPhoneMethod(application) ? i18next.t("general:Password") : null)}
+              label={signinItem.label ? signinItem.label : null}
               rules={[{required: true, message: i18next.t("login:Please input your password!")}]}
             >
               <Input.Password
@@ -1420,11 +1415,9 @@ class LoginPage extends React.Component {
           <div className="login-password">
             <Form.Item
               name="code"
-              label={unifiedPhoneMethod(application) ? i18next.t("login:Verification code") : null}
               rules={[{required: true, message: i18next.t("login:Please input your code!")}]}
             >
               <SendCodeInput
-                matrixStyle={Boolean(unifiedPhoneMethod(application))}
                 disabled={this.state.username?.length === 0 || !this.state.validEmailOrPhone}
                 method={"login"}
                 onButtonClickArgs={[this.state.username, this.state.validEmail ? "email" : "phone", Setting.getApplicationName(application)]}
@@ -1449,12 +1442,11 @@ class LoginPage extends React.Component {
         <Col span={24}>
           <Form.Item
             name="code"
-            label={signinItem.label || (unifiedPhoneMethod(application) ? i18next.t("login:Verification code") : null)}
+            label={signinItem.label ? signinItem.label : null}
             rules={[{required: true, message: i18next.t("login:Please input your code!")}]}
             className="verification-code"
           >
             <SendCodeInput
-              matrixStyle={Boolean(unifiedPhoneMethod(application))}
               disabled={this.state.username?.length === 0 || !this.state.validEmailOrPhone}
               method={"login"}
               onButtonClickArgs={[this.state.username, this.state.validEmail ? "email" : "phone", Setting.getApplicationName(application)]}
@@ -1665,34 +1657,6 @@ class LoginPage extends React.Component {
     }
 
     const wechatSigninMethods = application.signinMethods?.filter(method => method.name === "WeChat" && method.rule === "Login page");
-
-    if (unifiedPhoneMethod(application)) {
-      return (
-        <section className={`matrix-auth${Setting.isDarkTheme(this.props.themeAlgorithm) ? " matrix-auth-dark" : ""}`}>
-          {Setting.renderHelmet(application)}
-          <div className="matrix-auth-panel">
-            <header className="matrix-auth-brand">
-              <div className="matrix-auth-mark">
-                {application.logo ? <img src={application.logo} alt="" /> : (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                    <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
-                  </svg>
-                )}
-              </div>
-              <h1>{application.displayName || application.name}</h1>
-            </header>
-            <div className="matrix-auth-form">{this.renderLoginPanel(application)}</div>
-            {wechatSigninMethods?.length > 0 && (
-              <div className="matrix-auth-wechat">
-                <h3>{i18next.t("provider:Please use WeChat to scan the QR code and follow the official account for sign in")}</h3>
-                <WeChatLoginPanel application={application} loginMethod={this.state.loginMethod} />
-              </div>
-            )}
-          </div>
-        </section>
-      );
-    }
 
     return (
       <React.Fragment>

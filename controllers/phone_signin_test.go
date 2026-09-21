@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/casdoor/casdoor/form"
@@ -18,6 +19,9 @@ func TestPhoneSignupKeepsOAuthContextAndGeneratesCredentials(t *testing.T) {
 	}
 	if got.Phone != "13800138000" || got.PhoneCode != "123456" || got.Username == original.Username || len(got.Password) < 24 {
 		t.Fatal("invalid signup identity")
+	}
+	if !regexp.MustCompile(`^mozia_[a-f0-9]{18}$`).MatchString(got.Username) {
+		t.Fatal("generated username violates account rules")
 	}
 	if got.InvitationCode != "" {
 		t.Fatal("business invitation must not become Casdoor invitation")

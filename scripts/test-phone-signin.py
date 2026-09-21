@@ -260,3 +260,59 @@ try:
 finally:
     sms_stub.shutdown()
     sms_stub.server_close()
+
+# Embedded login: BFF authentication -> one-use browser POST -> OIDC SSO.
+return_origin = "http://127.0.0.1:21900"
+return_uri = return_origin + "/login?sso_return=12345678-1234-1234-1234-123456789abc"
+sql(f"UPDATE application SET embedded_signin_origins={quoted(json.dumps([return_origin]))} WHERE name={quoted(fixture)}")
+embedded_header = "Basic " + base64.b64encode((client_id + ":" + client_secret).encode()).decode()
+
+
+def embedded(phone, code, secret=embedded_header, uri=return_uri):
+    bff, cookies = browser()
+    request = urllib.request.Request(BASE + "/api/login", data=json.dumps(body(phone,code,type="login",browserReturnUri=uri)).encode(), headers={"Content-Type":"application/json", "X-Casdoor-Embedded-Client":secret})
+    with bff.open(request) as response:
+        result = json.load(response)
+    return result, bff
+
+
+challenge = seed("13100131000", "123456")
+for secret, uri in [("Basic invalid", return_uri), (embedded_header, "https://evil.test/login")]:
+    assert embedded("13100131000", "123456", secret, uri)[0]["status"] == "error"
+    assert sql(f"SELECT is_used FROM verification_record WHERE name={quoted(challenge)} AND owner={quoted(fixture)}") == "f"
+result, bff = embedded("13100131000", "123456")
+assert result["status"] == "ok", result.get("msg")
+assert result["data2"]["newUser"] is True
+assert json.load(bff.open(BASE + "/api/userinfo"))["sub"]
+ticket = result["data2"]["browserTicket"]
+jar = http.cookiejar.CookieJar()
+consumer = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect())
+
+
+def post_ticket(ticket, origin):
+    headers = {"Content-Type":"application/x-www-form-urlencoded"}
+    if origin is not None: headers["Origin"] = origin
+    req = urllib.request.Request(BASE + "/api/browser-signin", data=urllib.parse.urlencode({"ticket":ticket}).encode(),headers=headers)
+    try: return consumer.open(req)
+    except urllib.error.HTTPError as error: return error
+
+
+for origin in [None,"null","https://evil.test"]:
+    assert post_ticket(ticket, origin).status == 400
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    statuses = list(pool.map(lambda _: post_ticket(ticket, return_origin).status,range(2)))
+assert statuses.count(303) == 1 and statuses.count(400) == 1, statuses
+assert post_ticket(ticket,return_origin).status == 400
+assert json.load(consumer.open(BASE + "/api/userinfo"))["sub"] == json.load(bff.open(BASE + "/api/userinfo"))["sub"]
+try:
+    r = consumer.open(BASE + "/login/oauth/authorize?" + urllib.parse.urlencode({"client_id":client_id,"response_type":"code","redirect_uri":callback,"scope":"openid profile","state":"embedded-sso"}))
+except urllib.error.HTTPError as error: r = error
+assert r.status == 302 and "state=embedded-sso" in r.headers["Location"]
+seed("13100131000", "234567")
+result,_ = embedded("13100131000","234567")
+assert result["data2"]["newUser"] is False
+sql(f"UPDATE application SET disable_signin=true WHERE name={quoted(fixture)}")
+assert post_ticket(result["data2"]["browserTicket"],return_origin).status == 403
+sql(f"UPDATE application SET disable_signin=false WHERE name={quoted(fixture)}")
+assert sql("SELECT count(*) FROM record WHERE action='browser-signin' AND object LIKE '%ticket=%'") == "0"
+print("PASS embedded: client/origin before OTP, new/old metadata, concurrent single use, browser session, OAuth continuation, disabled app, audit redaction")

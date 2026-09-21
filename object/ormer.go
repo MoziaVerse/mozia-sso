@@ -323,6 +323,10 @@ func (a *Ormer) createTable() {
 		panic(err)
 	}
 
+	err = a.Engine.Sync2(new(BrowserSigninTicket))
+	if err != nil {
+		panic(err)
+	}
 	err = a.Engine.Sync2(new(HduBindingTicket))
 	if err != nil {
 		panic(err)

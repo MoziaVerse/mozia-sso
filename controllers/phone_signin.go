@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/casdoor/casdoor/form"
@@ -27,7 +28,7 @@ func phoneSignupForm(input form.AuthForm) (form.AuthForm, error) {
 	}
 	input.Phone = util.GetSeperatedPhone(input.Username)
 	input.PhoneCode = input.Code
-	input.Username = "mozia_" + base64.RawURLEncoding.EncodeToString(b[:9])
+	input.Username = "mozia_" + hex.EncodeToString(b[:9])
 	input.Name = input.Username
 	input.Password = "Mz" + base64.RawURLEncoding.EncodeToString(b) + "9@!"
 	// Growth invitations stay in Matrix; the unified form does not accept a Casdoor invitation.

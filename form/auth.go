@@ -52,9 +52,10 @@ type AuthForm struct {
 	PhoneCode   string `json:"phoneCode"`
 	CountryCode string `json:"countryCode"`
 
-	AutoSignin        bool `json:"autoSignin"`
-	Agreement         bool `json:"agreement"`
-	PhoneSigninSignup bool `json:"phoneSigninSignup"`
+	AutoSignin        bool   `json:"autoSignin"`
+	Agreement         bool   `json:"agreement"`
+	BrowserReturnUri  string `json:"browserReturnUri"`
+	PhoneSigninSignup bool   `json:"phoneSigninSignup"`
 
 	RelayState   string `json:"relayState"`
 	SamlRequest  string `json:"samlRequest"`

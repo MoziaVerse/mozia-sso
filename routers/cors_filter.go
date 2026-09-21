@@ -43,6 +43,11 @@ func setCorsHeaders(ctx *context.Context, origin string) {
 }
 
 func CorsFilter(ctx *context.Context) {
+	// Top-level form navigation needs no CORS response headers. The controller
+	// requires an exact ticket-bound Origin before it changes any session.
+	if ctx.Request.Method == "POST" && ctx.Request.URL.Path == "/api/browser-signin" {
+		return
+	}
 	origin := ctx.Input.Header(headerOrigin)
 	originConf := conf.GetConfigString("origin")
 	originHostname := getHostname(origin)

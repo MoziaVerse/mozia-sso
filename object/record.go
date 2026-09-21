@@ -85,6 +85,9 @@ func NewRecord(ctx *context.Context) (*Record, error) {
 	if ctx.Input.RequestBody != nil && len(ctx.Input.RequestBody) != 0 {
 		object = string(ctx.Input.RequestBody)
 		object = maskPassword(object)
+		if action == "browser-signin" {
+			object = "[single-use ticket redacted]"
+		}
 	}
 
 	respBytes, err := json.Marshal(ctx.Input.Data()["json"])

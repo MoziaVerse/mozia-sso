@@ -172,6 +172,22 @@ func (c *ApiController) HandleLoggedIn(application *object.Application, user *ob
 		c.SetSessionUsername(userId)
 		util.LogInfo(c.Ctx, "API: [%s] signed in", userId)
 		resp = &Response{Status: "ok", Msg: "", Data: userId, Data3: user.NeedUpdatePassword}
+		if form.PhoneSigninSignup {
+			resp.Data2 = map[string]interface{}{"newUser": c.Ctx.Input.Params()["recordSignup"] == "true"}
+		}
+		if form.BrowserReturnUri != "" && !user.NeedUpdatePassword {
+			if err := c.validateEmbeddedSignin(form); err != nil {
+				c.ResponseError(err.Error())
+				return nil
+			}
+			ticket, err := object.CreateBrowserSigninTicket(application, user, form.BrowserReturnUri)
+			if err != nil {
+				c.ResponseError("无法建立单点登录交接，请重试")
+				return nil
+			}
+			resp.Data2 = map[string]interface{}{"newUser": c.Ctx.Input.Params()["recordSignup"] == "true", "browserTicket": ticket}
+			c.Ctx.Output.Header("Cache-Control", "no-store")
+		}
 	} else if form.Type == ResponseTypeCode {
 		clientId := c.Ctx.Input.Query("clientId")
 		responseType := c.Ctx.Input.Query("responseType")
@@ -555,6 +571,10 @@ func (c *ApiController) Login() {
 		return
 	}
 
+	if err = c.validateEmbeddedSignin(&authForm); err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
 	handled, unlockPhone := c.preparePhoneSignin(&authForm)
 	defer unlockPhone()
 	if handled {

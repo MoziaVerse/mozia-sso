@@ -96,6 +96,7 @@ type Application struct {
 	HeaderHtml                   string          `xorm:"mediumtext" json:"headerHtml"`
 	EnablePassword               bool            `json:"enablePassword"`
 	EnableSignUp                 bool            `json:"enableSignUp"`
+	EmbeddedSigninOrigins        []string        `xorm:"text" json:"embeddedSigninOrigins"`
 	EnablePhoneSigninSignup      bool            `json:"enablePhoneSigninSignup"`
 	DisableSignin                bool            `json:"disableSignin"`
 	EnableSigninSession          bool            `json:"enableSigninSession"`

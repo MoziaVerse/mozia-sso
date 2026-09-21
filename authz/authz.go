@@ -43,6 +43,7 @@ p, app, *, *, *, *, *
 p, *, *, POST, /api/signup, *, *
 p, *, *, GET, /api/get-email-and-phone, *, *
 p, *, *, POST, /api/login, *, *
+p, *, *, POST, /api/browser-signin, *, *
 p, *, *, GET, /api/get-app-login, *, *
 p, *, *, GET, /api/hdu-binding/start, *, *
 p, *, *, GET, /api/hdu-binding/callback, *, *

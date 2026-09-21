@@ -1,3 +1,5 @@
+> 方案已修正：Matrix 保留原页面，Casdoor 保留原生托管外观。下方“迁入 Matrix 视觉”的历史截图与记录已失效，不作为当前验收依据。当前实现见 phone-signin-signup.md；嵌入登录及浏览器 POST 交接已完成本地 PostgreSQL HTTP 回归，测试服验收另行补充。
+
 # Casdoor 手机号一体登录／注册：本地验收记录
 
 日期：2026-09-21。本页记录本地隔离验收。后续已完成测试服发布与真实短信老账号登录，见 [测试服验收](phone-auth-test-deployment-2026-09-21.md)。生产和 Matrix／子应用入口尚未切换。
