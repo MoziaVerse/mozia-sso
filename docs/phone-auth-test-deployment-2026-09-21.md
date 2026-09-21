@@ -40,7 +40,7 @@
 
 ## 尚未完成
 
-- MoSpace 已有独立 Casdoor client，保持原组织与原跳转关系。其协议地址为空，已向用户询问；在可展示的协议明确前，暂未开启它的手机号一体注册开关。
+- 第一阶段曾因 MoSpace 协议地址为空暂缓；第二阶段已确认现有《统一账户与服务用户协议》覆盖全平台，完成启用，见下文。
 - 真实新手机号、增长邀请码奖励、代理商首次自动归属、MFA 与第三方身份提供方仍未做真实端到端验收。新注册及禁用／并发等在一次性 PostgreSQL 和本机短信桩完成 HTTP 回归。
 - 各产品退出会话仍独立，未改为全平台强制退出。
 
@@ -51,3 +51,23 @@
 浏览器实测：同一地址刷新后默认“手机登录”，显示区号、手机号、验证码与“登录”按钮；没有自动注册提示或新增协议勾选；可切换“账号登录”，无横向溢出。一次性 PostgreSQL HTTP 回归验证关闭注册时已有账号无需注册协议即可登录，未知手机号仍不能建号，Matrix 及票据交接回归通过。本次未使用内部真实账号发送短信，因此不冒称完成内部账号真实短信验收。
 
 部署前备份：`~/app/mozia-sso-backups/20260921-internal-phone`。回退页面开关可执行备份中的 `rollback.sql`；镜像回到 `test-593bf9c6` 时继续保留会话持久化卷。
+
+
+## 第二阶段：公共主站及独立子应用（2026-09-21）
+
+公共主站为 `/`、`/login`、`/signup`，使用 `mozia` 组织新建的 `mozia-account`，默认手机号验证码，统一“登录 / 注册”。`publicLoginApplication = "mozia-account"` 显式配置公共入口；未配置时保留 Casdoor 原默认行为。组织 `mozia.default_application` 从失效的旧名称修正到此公共账户应用。公共入口不再跟随浏览器的 `lastLoginOrg` 误入内部员工组织。`/login/mozia-internal` 保留内部账号登录，不开放内部注册；不是普通用户的主站链接。
+
+MoSpace 保留原独立 client、组织及已有回调，仅开启手机号一体登录／注册，使用已存在且覆盖全系列应用的《统一账户与服务用户协议》。保留 Casdoor 原生视觉，未复制 Matrix 产品样式。其当前测试回调仍是本地/局域网地址，因此托管认证页验收不等于实际 MoSpace 部署的回跳验收。
+
+新增应用 `mozia-canvas`、`mozia-tts-studio`、`mozia-reel`，各有独立生成的 client ID/secret，只允许 authorization_code，使用 JWT/RS256，开启严格回调匹配及自动 SSO。三个回调分别为测试 Matrix backend `/api/external/oidc/{zeo-canvas,tts-studio,mozia-reel}/callback`。`enableStrictRedirectUri` 默认关闭，旧应用行为不变；新应用开启后不允许任意 localhost、正则子串或附加路径。密钥只保存于受限服务器配置。
+
+普通用户 `/apps` 中可见三个应用卡片，指向 Matrix 原 `/launch/<clientId>?sso=1`；认证由每个独立 Casdoor client 完成，Matrix BFF 保留业务交接、钱包及原 UI。MoSpace 不归入 Matrix 子应用。
+
+本次代码：SSO `84ce5231`（镜像 `mozia-sso:test-84ce5231`），Matrix 后端包含独立回调与静默登录回退，详见 Matrix PR #218。备份位于 `~/app/mozia-sso-backups/20260921-public-apps`，含 SSO 数据库、两边配置及定向回滚 SQL；回滚不删除用户，不整库覆盖。
+
+已完成：Go 定向测试；隔离 PostgreSQL + 本机短信桩的手机号新旧账号、策略、并发、浏览器会话、静默授权、严格回调和显式提供方回归；浏览器确认主站与 MoSpace 默认手机号登录／注册；测试服同一已有账号通过三个独立 client 授权并进入各应用，SSO token 记录确认三者属于同一用户。已清除 Matrix 会话后复用 SSO 会话进入 TTS Studio，无需再次验证码。
+
+本轮未发送真实新号码短信；此前真实短信已通过 Matrix 原表单验证上游发码及浏览器 SSO。真实新账号业务奖励、代理商首次归属、MFA 全链路与全局退出不在本轮完成声明中。
+
+
+补充实测：主站在记住 `lastLoginOrg=mozia-internal` 时仍进入公共手机号表单；`/signup` 使用同一登录／注册表单。实际点击 `/apps` 中 Canvas 卡片成功进入测试项目库。完全无 SSO 与 Matrix 会话的应用入口回到 Matrix 原登录页，保留应用回跳；未把普通访客留在认证库错误页。
