@@ -447,6 +447,10 @@ function ManagementPage(props) {
     if (props.account === null) {
       const lastLoginOrg = localStorage.getItem("lastLoginOrg");
       sessionStorage.setItem("from", window.location.pathname);
+      // Public entry must not inherit a previously used internal employee realm.
+      if (Conf.PublicLoginApplication && ["/", "/apps", "/account"].includes(window.location.pathname)) {
+        return <Redirect to="/login" />;
+      }
       if (lastLoginOrg) {
         return <Redirect to={`/login/${lastLoginOrg}`} />;
       } else {

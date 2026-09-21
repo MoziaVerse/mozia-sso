@@ -98,6 +98,7 @@ type Application struct {
 	EnableSignUp                 bool            `json:"enableSignUp"`
 	EmbeddedSigninOrigins        []string        `xorm:"text" json:"embeddedSigninOrigins"`
 	EnablePhoneSigninSignup      bool            `json:"enablePhoneSigninSignup"`
+	EnableStrictRedirectUri      bool            `json:"enableStrictRedirectUri"`
 	DisableSignin                bool            `json:"disableSignin"`
 	EnableSigninSession          bool            `json:"enableSigninSession"`
 	EnableAutoSignin             bool            `json:"enableAutoSignin"`
@@ -852,6 +853,14 @@ func (application *Application) GetId() string {
 }
 
 func (application *Application) IsRedirectUriValid(redirectUri string) bool {
+	if application.EnableStrictRedirectUri {
+		for _, allowed := range application.RedirectUris {
+			if allowed != "" && allowed == redirectUri {
+				return true
+			}
+		}
+		return false
+	}
 	isValid, err := util.IsValidOrigin(redirectUri)
 	if err != nil {
 		panic(err)

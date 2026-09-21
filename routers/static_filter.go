@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -155,6 +156,31 @@ func StaticFilter(ctx *context.Context) {
 
 		if redirectUrl != "" {
 			http.Redirect(ctx.ResponseWriter, ctx.Request, redirectUrl, http.StatusFound)
+			return
+		}
+
+		// A BFF can probe the shared session without replacing its own login UI.
+		if ctx.Input.Query("prompt") == "none" {
+			message, application, err := object.CheckOAuthLogin(ctx.Input.Query("client_id"), ctx.Input.Query("response_type"), ctx.Input.Query("redirect_uri"), ctx.Input.Query("scope"), ctx.Input.Query("state"), getAcceptLanguage(ctx))
+			if err != nil || message != "" || application == nil {
+				http.Error(ctx.ResponseWriter, "Invalid silent authorization request", http.StatusBadRequest)
+				return
+			}
+			target, err := url.Parse(ctx.Input.Query("redirect_uri"))
+			if err != nil {
+				http.Error(ctx.ResponseWriter, "Invalid redirect URI", http.StatusBadRequest)
+				return
+			}
+			query := target.Query()
+			errorCode := "login_required"
+			if getSessionUser(ctx) != "" {
+				errorCode = "interaction_required"
+			}
+			query.Set("error", errorCode)
+			query.Set("state", ctx.Input.Query("state"))
+			target.RawQuery = query.Encode()
+			ctx.Output.Header("Cache-Control", "no-store")
+			http.Redirect(ctx.ResponseWriter, ctx.Request, target.String(), http.StatusFound)
 			return
 		}
 

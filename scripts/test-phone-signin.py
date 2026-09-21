@@ -316,3 +316,19 @@ assert post_ticket(result["data2"]["browserTicket"],return_origin).status == 403
 sql(f"UPDATE application SET disable_signin=false WHERE name={quoted(fixture)}")
 assert sql("SELECT count(*) FROM record WHERE action='browser-signin' AND object LIKE '%ticket=%'") == "0"
 print("PASS embedded: client/origin before OTP, new/old metadata, concurrent single use, browser session, OAuth continuation, disabled app, audit redaction")
+
+# Silent authorization never exposes an interactive hosted page; strict clients cannot redirect elsewhere.
+sql(f"UPDATE application SET enable_strict_redirect_uri=true WHERE name={quoted(fixture)}")
+silent_params = {"client_id":client_id,"response_type":"code","redirect_uri":callback,"scope":"openid profile","state":"silent & state","prompt":"none"}
+anonymous = urllib.request.build_opener(NoRedirect())
+def silent(client, params):
+    try: return client.open(BASE + "/login/oauth/authorize?" + urllib.parse.urlencode(params))
+    except urllib.error.HTTPError as error: return error
+r = silent(anonymous, silent_params)
+assert r.status == 302
+assert urllib.parse.parse_qs(urllib.parse.urlparse(r.headers["Location"]).query) == {"error":["login_required"],"state":["silent & state"]}
+for bad in ["http://127.0.0.1:29999/callback", "https://evil.test/?next=" + callback]:
+    assert silent(anonymous, {**silent_params,"redirect_uri":bad}).status == 400
+r = silent(consumer, {**silent_params,"state":"silent-authenticated"})
+assert r.status == 302 and "code=" in r.headers["Location"]
+print("PASS silent OIDC: anonymous login_required, encoded state, strict callback rejection, authenticated code")

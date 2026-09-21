@@ -15,12 +15,13 @@
 package conf
 
 type WebConfig struct {
-	ShowGithubCorner bool   `json:"showGithubCorner"`
-	ForceLanguage    string `json:"forceLanguage"`
-	DefaultLanguage  string `json:"defaultLanguage"`
-	IsDemoMode       bool   `json:"isDemoMode"`
-	StaticBaseUrl    string `json:"staticBaseUrl"`
-	AiAssistantUrl   string `json:"aiAssistantUrl"`
+	ShowGithubCorner       bool   `json:"showGithubCorner"`
+	ForceLanguage          string `json:"forceLanguage"`
+	DefaultLanguage        string `json:"defaultLanguage"`
+	IsDemoMode             bool   `json:"isDemoMode"`
+	StaticBaseUrl          string `json:"staticBaseUrl"`
+	AiAssistantUrl         string `json:"aiAssistantUrl"`
+	PublicLoginApplication string `json:"publicLoginApplication"`
 }
 
 func GetWebConfig() *WebConfig {
@@ -35,6 +36,7 @@ func GetWebConfig() *WebConfig {
 	config.IsDemoMode = IsDemoMode()
 	config.StaticBaseUrl = GetConfigString("staticBaseUrl")
 	config.AiAssistantUrl = GetConfigString("aiAssistantUrl")
+	config.PublicLoginApplication = GetConfigString("publicLoginApplication")
 
 	return config
 }

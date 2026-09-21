@@ -15,6 +15,8 @@
 import * as Cookie from "cookie";
 
 export const DefaultApplication = "app-built-in";
+// Optional public account portal. Explicit organization/admin login routes stay available.
+export let PublicLoginApplication = "";
 
 export let ShowGithubCorner = false;
 export let IsDemoMode = false;
@@ -47,6 +49,9 @@ export function setConfig(config) {
   }
   if (config.showGithubCorner !== undefined) {
     ShowGithubCorner = config.showGithubCorner;
+  }
+  if (typeof config.publicLoginApplication === "string") {
+    PublicLoginApplication = config.publicLoginApplication;
   }
   if (config.isDemoMode !== undefined) {
     IsDemoMode = config.isDemoMode;
