@@ -22,7 +22,7 @@ import {CaptchaModal} from "./modal/CaptchaModal";
 
 const {Search} = Input;
 
-export const SendCodeInput = ({value, disabled, captchaValue, useInlineCaptcha, textBefore, onChange, onButtonClickArgs, application, method, countryCode, refreshCaptcha}) => {
+export const SendCodeInput = ({id, matrixStyle = false, value, disabled, captchaValue, useInlineCaptcha, textBefore, onChange, onButtonClickArgs, application, method, countryCode, refreshCaptcha}) => {
   const [visible, setVisible] = React.useState(false);
   const [buttonLeftTime, setButtonLeftTime] = React.useState(0);
   const [buttonLoading, setButtonLoading] = React.useState(false);
@@ -97,7 +97,16 @@ export const SendCodeInput = ({value, disabled, captchaValue, useInlineCaptcha, 
 
   return (
     <React.Fragment>
-      <Search
+      {matrixStyle ? (
+        <div className="matrix-auth-code">
+          <Input id={id} value={value} disabled={disabled} inputMode="numeric" autoComplete="one-time-code"
+            placeholder={i18next.t("code:Enter your code")} onChange={e => onChange(e.target.value)} />
+          <Button htmlType="button" disabled={disabled || buttonLeftTime > 0} loading={buttonLoading} onClick={handleSearch}>
+            {buttonLeftTime > 0 ? `${buttonLeftTime} s` : buttonLoading ? i18next.t("code:Sending") : i18next.t("code:Send Code")}
+          </Button>
+        </div>
+      ) : <Search
+        id={id}
         addonBefore={textBefore}
         disabled={disabled}
         value={value}
@@ -112,7 +121,7 @@ export const SendCodeInput = ({value, disabled, captchaValue, useInlineCaptcha, 
         }
         onSearch={handleSearch}
         autoComplete="one-time-code"
-      />
+      />}
       {
         useInlineCaptcha ? null : (
           <CaptchaModal
