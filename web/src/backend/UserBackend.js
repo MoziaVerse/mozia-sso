@@ -113,7 +113,7 @@ export function setPassword(userOwner, userName, oldPassword, newPassword, code 
   }).then(res => res.json());
 }
 
-export function sendCode(captchaType, captchaToken, clientSecret, method, countryCode = "", dest, type, applicationId, checkUser = "") {
+export function sendCode(captchaType, captchaToken, clientSecret, method, countryCode = "", dest, type, applicationId, checkUser = "", onRateLimit) {
   if (Setting.isValidEmail(dest) && type !== "email") {
     type = "email";
   }
@@ -141,6 +141,9 @@ export function sendCode(captchaType, captchaToken, clientSecret, method, countr
       return true;
     } else {
       Setting.showMessage("error", res.msg);
+      if (typeof res.data?.retryAfterSeconds === "number") {
+        onRateLimit?.(res.data.retryAfterSeconds);
+      }
       return false;
     }
   });

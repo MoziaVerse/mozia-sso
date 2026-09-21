@@ -18,6 +18,7 @@
     "Use same DB - Tooltip": "与Casdoor使用同一个数据库"
   },
   "application": {
+    "Phone signup and signin": "手机号登录／注册一体",
     "Add Face ID": "添加人脸ID",
     "Add Face ID with Image": "添加图片人脸ID",
     "Always": "始终开启",
@@ -630,6 +631,11 @@
     "unsynced": "未同步"
   },
   "login": {
+    "Sign in or sign up": "登录 / 注册",
+    "Phone sign in": "手机登录",
+    "Account sign in": "账号登录",
+    "Enter phone number": "请输入手机号",
+    "Phone signup notice": "未注册的手机号将自动创建账号。",
     "Auto sign in": "下次自动登录",
     "Back button": "返回按钮",
     "Click the button below to sign in with Telegram": "点击下方按钮使用Telegram登录",

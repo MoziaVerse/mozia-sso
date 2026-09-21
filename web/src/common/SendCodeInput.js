@@ -49,11 +49,22 @@ export const SendCodeInput = ({value, disabled, captchaValue, useInlineCaptcha, 
   const handleOk = (captchaType, captchaToken, clintSecret) => {
     setVisible(false);
     setButtonLoading(true);
-    UserBackend.sendCode(captchaType, captchaToken, clintSecret, method, countryCode, ...onButtonClickArgs).then(res => {
+    const args = [...onButtonClickArgs];
+    args[3] = args[3] || "";
+    let rateLimited = false;
+    UserBackend.sendCode(captchaType, captchaToken, clintSecret, method, countryCode, ...args, (retryAfter) => {
+      rateLimited = true;
+      if (retryAfter > 0) {
+        handleCountDown(retryAfter);
+      }
+    }).then(res => {
       setButtonLoading(false);
       if (res) {
         handleCountDown(getCodeResendTimeout());
       } else {
+        if (application?.enablePhoneSigninSignup && !rateLimited) {
+          handleCountDown(15);
+        }
         if (useInlineCaptcha) {
           refreshCaptcha?.();
         }

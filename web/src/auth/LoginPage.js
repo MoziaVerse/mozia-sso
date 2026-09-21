@@ -30,6 +30,7 @@ import * as AgreementModal from "../common/modal/AgreementModal";
 import SelfLoginButton from "./SelfLoginButton";
 import i18next from "i18next";
 import CustomGithubCorner from "../common/CustomGithubCorner";
+import {isUnifiedPhoneLogin, phoneSigninValues, unifiedPhoneMethod} from "./phoneSignin";
 import {SendCodeInput} from "../common/SendCodeInput";
 import LanguageSelect from "../common/select/LanguageSelect";
 import {CaptchaModal, CaptchaRule} from "../common/modal/CaptchaModal";
@@ -58,6 +59,7 @@ class LoginPage extends React.Component {
       username: null,
       validEmailOrPhone: false,
       validEmail: false,
+      loginMethod: props.application ? this.getDefaultLoginMethod(props.application) : undefined,
       openCaptchaModal: false,
       openFaceRecognitionModal: false,
       verifyCaptcha: undefined,
@@ -244,6 +246,10 @@ class LoginPage extends React.Component {
   }
 
   getDefaultLoginMethod(application) {
+    const phoneMethod = unifiedPhoneMethod(application);
+    if (phoneMethod) {
+      return phoneMethod;
+    }
     if (application?.signinMethods?.length > 0) {
       switch (application?.signinMethods[0].name) {
       case "Password": return "password";
@@ -486,6 +492,7 @@ class LoginPage extends React.Component {
   }
 
   login(values) {
+    values = phoneSigninValues(values, isUnifiedPhoneLogin(this.getApplicationObj(), this.state.loginMethod, this.state.validEmail));
     // here we are supposed to determine whether Casdoor is working as an OAuth server or CAS server
     values["language"] = this.state.userLang ?? "";
     const usedCaptcha = this.state.captchaValues !== undefined;
@@ -734,6 +741,7 @@ class LoginPage extends React.Component {
               <CountryCodeSelect
                 style={{width: "35%"}}
                 countryCodes={this.getApplicationObj().organizationObj.countryCodes}
+                initValue={unifiedPhoneMethod(application) ? application.organizationObj.countryCodes?.[0] : undefined}
               />
             </Form.Item>
             <Form.Item
@@ -764,7 +772,9 @@ class LoginPage extends React.Component {
             >
               <Input
                 className="signup-phone-input"
-                placeholder={signinItem.placeholder}
+                placeholder={isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) ? i18next.t("login:Enter phone number") : signinItem.placeholder}
+                autoComplete="tel-national"
+                inputMode="tel"
                 style={{width: "65%", textAlign: "left"}}
                 onChange={e => this.setState({username: e.target.value})}
               />
@@ -864,6 +874,9 @@ class LoginPage extends React.Component {
         </div>
       );
     } else if (signinItem.name === "Forgot password?") {
+      if (isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail)) {
+        return null;
+      }
       return (
         <div key={resultItemKey}>
           <div dangerouslySetInnerHTML={{__html: ("<style>" + signinItem.customCss?.replaceAll("<style>", "").replaceAll("</style>", "") + "</style>")}} />
@@ -880,7 +893,7 @@ class LoginPage extends React.Component {
         </div>
       );
     } else if (signinItem.name === "Agreement") {
-      return AgreementModal.isAgreementRequired(application) ? AgreementModal.renderAgreementFormItem(application, true, {}, this) : null;
+      return isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) ? null : (AgreementModal.isAgreementRequired(application) ? AgreementModal.renderAgreementFormItem(application, true, {}, this) : null);
     } else if (signinItem.name === "Login button") {
       if (this.state.loginMethod === "wechat") {
         return null;
@@ -888,6 +901,12 @@ class LoginPage extends React.Component {
       return (
         <Form.Item key={resultItemKey} className="login-button-box">
           <div dangerouslySetInnerHTML={{__html: ("<style>" + signinItem.customCss?.replaceAll("<style>", "").replaceAll("</style>", "") + "</style>")}} />
+          {isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) && (
+            <div>
+              {application.enableSignUp && <p className="phone-signup-notice">{i18next.t("login:Phone signup notice")}</p>}
+              {AgreementModal.renderAgreementFormItem(application, true, {}, this)}
+            </div>
+          )}
           <Button
             loading={this.state.loginLoading}
             type="primary"
@@ -895,9 +914,10 @@ class LoginPage extends React.Component {
             className="login-button"
           >
             {
-              this.state.loginMethod === "webAuthn" ? i18next.t("login:Sign in with WebAuthn") :
-                this.state.loginMethod === "faceId" ? i18next.t("login:Sign in with Face ID") :
-                  signinItem.label ? signinItem.label : i18next.t("login:Sign In")
+              isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) ? i18next.t(application.enableSignUp ? "login:Sign in or sign up" : "login:Sign In") :
+                this.state.loginMethod === "webAuthn" ? i18next.t("login:Sign in with WebAuthn") :
+                  this.state.loginMethod === "faceId" ? i18next.t("login:Sign in with Face ID") :
+                    signinItem.label ? signinItem.label : i18next.t("login:Sign In")
             }
           </Button>
           {
@@ -1042,6 +1062,7 @@ class LoginPage extends React.Component {
           initialValues={{
             organization: application.organization,
             application: application.name,
+            countryCode: unifiedPhoneMethod(application) ? application.organizationObj.countryCodes?.[0] : undefined,
             autoSignin: !application?.signinItems.map(signinItem => signinItem.name === "Forgot password?" && signinItem.rule === "Auto sign in - False")?.includes(true),
             username: this.state.prefilledUsername || (Conf.ShowGithubCorner ? "admin" : ""),
             password: Conf.ShowGithubCorner ? "123" : "",
@@ -1171,6 +1192,9 @@ class LoginPage extends React.Component {
   }
 
   renderFooter(application, signinItem) {
+    if (unifiedPhoneMethod(application)) {
+      return null;
+    }
     return (
       <div>
         {
@@ -1466,7 +1490,14 @@ class LoginPage extends React.Component {
       }
       const item = itemsMap.get(generateItemKey(signinMethod.name, signinMethod.rule));
       if (item) {
-        let label = signinMethod.name === signinMethod.displayName ? item.label : signinMethod.displayName;
+        let label = !signinMethod.displayName || signinMethod.name === signinMethod.displayName ? item.label : signinMethod.displayName;
+        if (unifiedPhoneMethod(application)) {
+          if (item.key === "verificationCodePhone") {
+            label = i18next.t("login:Phone sign in");
+          } else if (item.key === "password") {
+            label = i18next.t("login:Account sign in");
+          }
+        }
 
         if (application?.signinMethods?.length >= 4 && label === "Verification code") {
           label = "Code";
@@ -1476,6 +1507,10 @@ class LoginPage extends React.Component {
       }
     });
 
+    const phoneMethod = unifiedPhoneMethod(application);
+    if (phoneMethod) {
+      items.sort((a, b) => Number(b.key === phoneMethod) - Number(a.key === phoneMethod));
+    }
     if (items.length > 1) {
       return (
         <div>

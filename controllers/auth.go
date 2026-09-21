@@ -555,6 +555,12 @@ func (c *ApiController) Login() {
 		return
 	}
 
+	handled, unlockPhone := c.preparePhoneSignin(&authForm)
+	defer unlockPhone()
+	if handled {
+		return
+	}
+
 	verificationType := ""
 
 	if authForm.Username != "" {
@@ -649,15 +655,21 @@ func (c *ApiController) Login() {
 				checkDest = authForm.Username
 			}
 
-			// check result through Email or Phone
-			err = object.CheckSigninCode(user, checkDest, authForm.Code, c.GetAcceptLanguage())
+			// The opt-in phone flow consumes the latest challenge atomically.
+			if application.EnablePhoneSigninSignup && verificationCodeType == object.VerifyTypePhone {
+				err = object.ConsumePhoneSigninCode(application.Organization, checkDest, authForm.Code, c.GetAcceptLanguage(), user)
+			} else {
+				err = object.CheckSigninCode(user, checkDest, authForm.Code, c.GetAcceptLanguage())
+			}
 			if err != nil {
 				c.ResponseError(fmt.Sprintf("%s - %s", verificationCodeType, err.Error()))
 				return
 			}
 
 			// disable the verification code
-			err = object.DisableVerificationCode(checkDest)
+			if !application.EnablePhoneSigninSignup || verificationCodeType != object.VerifyTypePhone {
+				err = object.DisableVerificationCode(checkDest)
+			}
 			if err != nil {
 				c.ResponseError(err.Error(), nil)
 				return

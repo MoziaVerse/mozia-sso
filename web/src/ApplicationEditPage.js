@@ -584,6 +584,16 @@ class ApplicationEditPage extends React.Component {
               }} />
             </Col>
           </Row>
+          <Row style={{marginTop: "20px"}}>
+            <Col span={Setting.isMobile() ? 19 : 6}>
+              {i18next.t("application:Phone signup and signin")}
+            </Col>
+            <Col span={5}>
+              <Switch checked={Boolean(this.state.application.enablePhoneSigninSignup)} onChange={checked => {
+                this.updateApplicationField("enablePhoneSigninSignup", checked);
+              }} />
+            </Col>
+          </Row>
           <Row style={{marginTop: "20px"}} >
             <Col style={{marginTop: "5px"}} span={(Setting.isMobile()) ? 19 : 2}>
               {Setting.getLabel(i18next.t("application:Disable signin"), i18next.t("application:Disable signin - Tooltip"))} :

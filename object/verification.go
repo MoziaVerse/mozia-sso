@@ -69,14 +69,15 @@ type VerificationRecord struct {
 	Name        string `xorm:"varchar(100) notnull pk" json:"name"`
 	CreatedTime string `xorm:"varchar(100)" json:"createdTime"`
 
-	RemoteAddr string `xorm:"varchar(100)" json:"remoteAddr"`
-	Type       string `xorm:"varchar(10)" json:"type"`
-	User       string `xorm:"varchar(100) notnull" json:"user"`
-	Provider   string `xorm:"varchar(100) notnull" json:"provider"`
-	Receiver   string `xorm:"varchar(100) index notnull" json:"receiver"`
-	Code       string `xorm:"varchar(10) notnull" json:"code"`
-	Time       int64  `xorm:"notnull" json:"time"`
-	IsUsed     bool   `xorm:"notnull" json:"isUsed"`
+	RemoteAddr     string `xorm:"varchar(100)" json:"remoteAddr"`
+	Type           string `xorm:"varchar(10)" json:"type"`
+	User           string `xorm:"varchar(100) notnull" json:"user"`
+	Provider       string `xorm:"varchar(100) notnull" json:"provider"`
+	Receiver       string `xorm:"varchar(100) index notnull" json:"receiver"`
+	Code           string `xorm:"varchar(10) notnull" json:"code"`
+	Time           int64  `xorm:"notnull" json:"time"`
+	IsUsed         bool   `xorm:"notnull" json:"isUsed"`
+	FailedAttempts int    `xorm:"notnull default 0" json:"-"`
 }
 
 func IsAllowSend(user *User, remoteAddr, recordType string, application *Application) error {
@@ -174,7 +175,17 @@ func SendVerificationCodeToEmail(organization *Organization, user *User, provide
 }
 
 func SendVerificationCodeToPhone(organization *Organization, user *User, provider *Provider, remoteAddr string, dest string, application *Application) error {
-	err := IsAllowSend(user, remoteAddr, provider.Category, application)
+	var err error
+	if application != nil && application.EnablePhoneSigninSignup {
+		unlock, lockErr := LockPhoneAuthentication(dest)
+		if lockErr != nil {
+			return lockErr
+		}
+		defer unlock()
+		err = CheckPhoneSendLimit(organization.Name, dest)
+	} else {
+		err = IsAllowSend(user, remoteAddr, provider.Category, application)
+	}
 	if err != nil {
 		return err
 	}

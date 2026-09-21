@@ -18,6 +18,7 @@
     "Use same DB - Tooltip": "Use the same DB as Casdoor"
   },
   "application": {
+    "Phone signup and signin": "Unified phone signup and signin",
     "Add Face ID": "Add Face ID",
     "Add Face ID with Image": "Add Face ID with Image",
     "Always": "Always",
@@ -630,6 +631,11 @@
     "unsynced": "unsynced"
   },
   "login": {
+    "Sign in or sign up": "Sign in / Sign up",
+    "Phone sign in": "Phone sign in",
+    "Account sign in": "Account sign in",
+    "Enter phone number": "Enter phone number",
+    "Phone signup notice": "An account will be created if this phone number is not registered.",
     "Auto sign in": "Auto sign in",
     "Back button": "Back button",
     "Click the button below to sign in with Telegram": "Click the button below to sign in with Telegram",

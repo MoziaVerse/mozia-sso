@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import LoginPage from "./LoginPage";
+import {unifiedPhoneMethod} from "./phoneSignin";
 import React from "react";
 import {Button, Form, Input, Popover, Radio, Result, Row, Select, message} from "antd";
 import * as Setting from "../Setting";
@@ -950,6 +952,10 @@ class SignupPage extends React.Component {
     const application = this.getApplicationObj();
     if (application === undefined || application === null) {
       return null;
+    }
+
+    if (unifiedPhoneMethod(application)) {
+      return <LoginPage {...this.props} application={application} type={this.props.location?.pathname === "/signup/oauth/authorize" ? "code" : "login"} mode="signin" />;
     }
 
     let existSignupButton = false;

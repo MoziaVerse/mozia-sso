@@ -89,6 +89,12 @@ func (c *ApiController) Signup() {
 		return
 	}
 
+	c.signup(authForm, false)
+}
+
+// unifiedPhone is set only after the caller validates the opt-in flow and holds
+// the phone lock. Standard signup keeps its existing contract.
+func (c *ApiController) signup(authForm form.AuthForm, unifiedPhone bool) {
 	application, err := object.GetApplication(fmt.Sprintf("admin/%s", authForm.Application))
 	if err != nil {
 		c.ResponseError(err.Error())
@@ -97,6 +103,27 @@ func (c *ApiController) Signup() {
 	if application == nil {
 		c.ResponseError(fmt.Sprintf(c.T("auth:The application: %s does not exist"), authForm.Application))
 		return
+	}
+
+	if application.EnablePhoneSigninSignup && authForm.Phone != "" {
+		if authForm.Organization != application.Organization {
+			c.ResponseError("应用与组织不匹配")
+			return
+		}
+		phone, ok := util.GetE164Number(authForm.Phone, authForm.CountryCode)
+		if !ok {
+			c.ResponseError("请输入有效的手机号")
+			return
+		}
+		authForm.Phone = util.GetSeperatedPhone(phone)
+		if !unifiedPhone {
+			unlock, lockErr := object.LockPhoneAuthentication(phone)
+			if lockErr != nil {
+				c.ResponseError(lockErr.Error())
+				return
+			}
+			defer unlock()
+		}
 	}
 
 	if !application.EnableSignUp {
@@ -112,6 +139,16 @@ func (c *ApiController) Signup() {
 
 	if organization == nil {
 		c.ResponseError(fmt.Sprintf(c.T("auth:The organization: %s does not exist"), authForm.Organization))
+		return
+	}
+
+	if unifiedPhone && !util.IsPhoneAllowInRegin(authForm.CountryCode, organization.CountryCodes) {
+		c.ResponseError(c.T("check:Your region is not allow to signup by phone"))
+		return
+	}
+
+	if unifiedPhone && organization.DisableSignin {
+		c.ResponseError("此组织暂不允许登录")
 		return
 	}
 
@@ -156,11 +193,16 @@ func (c *ApiController) Signup() {
 	}
 
 	var checkPhone string
-	if application.IsSignupItemVisible("Phone") && application.GetSignupItemRule("Phone") != "No verification" && authForm.Phone != "" {
+	if unifiedPhone || (application.IsSignupItemVisible("Phone") && application.GetSignupItemRule("Phone") != "No verification" && authForm.Phone != "") {
 		checkPhone, _ = util.GetE164Number(authForm.Phone, authForm.CountryCode)
 
 		var checkResult *object.VerifyResult
-		checkResult, err = object.CheckVerificationCode(checkPhone, authForm.PhoneCode, c.GetAcceptLanguage())
+		if application.EnablePhoneSigninSignup {
+			err = object.ConsumePhoneSigninCode(application.Organization, checkPhone, authForm.PhoneCode, c.GetAcceptLanguage(), nil)
+			checkResult = &object.VerifyResult{Code: object.VerificationSuccess}
+		} else {
+			checkResult, err = object.CheckVerificationCode(checkPhone, authForm.PhoneCode, c.GetAcceptLanguage())
+		}
 		if err != nil {
 			c.ResponseError(c.T(err.Error()))
 			return
@@ -285,6 +327,20 @@ func (c *ApiController) Signup() {
 		}
 	}
 
+	if unifiedPhone {
+		c.Ctx.Input.SetParam("recordUserId", user.GetId())
+		c.Ctx.Input.SetParam("recordSignup", "true")
+		// Keep organization MFA requirements on the same path as existing users.
+		if checkMfaEnable(c, user, organization, "sms") {
+			return
+		}
+		// Keep consent, application permissions, Session and OAuth code checks shared.
+		resp := c.HandleLoggedIn(application, user, &authForm)
+		c.Data["json"] = resp
+		c.ServeJSON()
+		return
+	}
+
 	if user.Type == "normal-user" {
 		c.SetSessionUsername(user.GetId())
 	} else if user.Type == "paid-user" {
@@ -299,7 +355,7 @@ func (c *ApiController) Signup() {
 		}
 	}
 
-	if checkPhone != "" {
+	if checkPhone != "" && !application.EnablePhoneSigninSignup {
 		err = object.DisableVerificationCode(checkPhone)
 		if err != nil {
 			c.ResponseError(err.Error())

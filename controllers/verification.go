@@ -23,6 +23,7 @@ import (
 	"github.com/beego/beego/v2/core/utils/pagination"
 	"github.com/casdoor/casdoor/captcha"
 	"github.com/casdoor/casdoor/form"
+	"github.com/casdoor/casdoor/internal/phoneauth"
 	"github.com/casdoor/casdoor/object"
 	"github.com/casdoor/casdoor/util"
 )
@@ -188,6 +189,13 @@ func (c *ApiController) SendVerificationCode() {
 		return
 	}
 
+	if application.EnablePhoneSigninSignup && vform.Type == object.VerifyTypePhone && vform.Method == LoginVerification {
+		if application.Organization == "built-in" || !application.IsCodeSigninViaSmsEnabled() || application.DisableSignin || organization.DisableSignin {
+			c.ResponseError("此应用未开放手机号登录")
+			return
+		}
+	}
+
 	var user *object.User
 	// Try to resolve user for CAPTCHA rule checking
 	// checkUser != "", means method is ForgetVerification
@@ -339,12 +347,16 @@ func (c *ApiController) SendVerificationCode() {
 			if user, err = object.GetUserByPhone(organization.Name, vform.Dest); err != nil {
 				c.ResponseError(err.Error())
 				return
-			} else if user == nil {
+			} else if user == nil && !(vform.Method == LoginVerification && application.EnablePhoneSigninSignup && application.EnableSignUp) {
 				c.ResponseError(c.T("verification:the user does not exist, please sign up first"))
 				return
 			}
 
-			vform.CountryCode = user.GetCountryCode(vform.CountryCode)
+			if user != nil {
+				vform.CountryCode = user.GetCountryCode(vform.CountryCode)
+			} else if vform.CountryCode == "" {
+				vform.CountryCode = "CN"
+			}
 		} else if vform.Method == ResetVerification || vform.Method == MfaSetupVerification {
 			if vform.CountryCode == "" {
 				if user = c.getCurrentUser(); user != nil {
@@ -380,6 +392,11 @@ func (c *ApiController) SendVerificationCode() {
 	}
 
 	if sendResp != nil {
+		if limit, ok := sendResp.(*phoneauth.RateLimitError); ok {
+			c.Ctx.Output.SetStatus(429)
+			c.ResponseError(limit.Error(), limit)
+			return
+		}
 		c.ResponseError(sendResp.Error())
 	} else {
 		c.ResponseOk()
