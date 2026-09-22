@@ -1,6 +1,8 @@
 # 手机号登录／注册一体
 
-该功能把 Matrix 的手机号一体认证迁入 Casdoor，默认关闭。本次实现 Casdoor 入口与验证基础；尚未切换 Matrix、Canvas、TTS、MoziaReel 的生产登录入口。
+当前生产状态（2026-09-22）：Casdoor 公共入口、Matrix 对应的托管授权页和 MoSpace 授权页已启用手机号登录／注册一体。保留顶部摩智视界 Logo，以“统一账号”区分业务产品，控件及间距对齐 Matrix。Matrix 自身登录编排和三个子应用入口未迁移。详见 [生产验收与回退记录](phone-login-production-2026-09-22.md)。
+
+此功能仍为默认关闭的应用级开关。代码中保留已部署版本的嵌入式会话交接、独立客户端等兼容能力，但生产未启用这些扩展；相关试验 PR 已关闭，不代表继续推进该迁移。
 
 ## 启用条件
 
@@ -20,7 +22,7 @@
 
 ## 两类产品入口
 
-Matrix 与其子应用保留既有登录页、样式、邀请码及回跳；Matrix 后端将发码和手机号登录／注册决策统一委托 Casdoor。独立应用如 MoSpace 继续使用自己的 OIDC client 跳转 Casdoor 托管页，该页采用原生 Casdoor 样式并优化手机号一体交互。此前 Matrix 视觉迁移已撤回；身份提供方不表达产品上下级关系。
+Matrix 与其子应用保留既有登录页、样式、邀请码及回跳；Matrix 后端将发码和手机号登录／注册决策统一委托 Casdoor。独立应用如 MoSpace 继续使用自己的 OIDC client 跳转 Casdoor 托管页。当前托管页保留原 Logo 和统一账号标识，采用对齐 Matrix 的表单控件与布局；身份提供方不表达产品上下级关系。
 
 嵌入登录应用单独配置 `embeddedSigninOrigins`，只接受精确 http(s) origin，不接受通配符。BFF 在 `/api/login` 提供 `browserReturnUri`，以 `X-Casdoor-Embedded-Client: Basic ...` 传服务器端 client 凭据。验证在消费验证码之前进行。正常认证完成后，`data2` 返回 `newUser` 和 60 秒有效单次 `browserTicket`。MFA 未完成、强制改密不会获得可用票据。
 
