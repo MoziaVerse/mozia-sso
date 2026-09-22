@@ -1,0 +1,53 @@
+// Only applications explicitly enabling unified phone sign-in use this layout.
+.unified-login {
+  .login-panel, .login-panel-dark {
+    width: 448px !important;
+    max-width: calc(100vw - 32px);
+    border-radius: 16px !important;
+  }
+  .login-panel > .login-form, .login-panel-dark > .login-form {
+    padding: 36px 32px 28px !important;
+    min-width: 0;
+  }
+  .login-logo-box {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    img { max-width: 240px; max-height: 64px; width: auto; height: auto; margin-bottom: 0 !important; }
+  }
+  .unified-account-label { font-size: 13px; line-height: 20px; color: #64748b; letter-spacing: 2px; }
+  .signin-methods .ant-tabs-nav { margin-bottom: 24px !important; }
+  .signin-methods .ant-tabs-nav-list { padding: 4px; background: #f1f5f9; border-radius: 8px; }
+  .signin-methods .ant-tabs-nav::before, .signin-methods .ant-tabs-ink-bar { display: none !important; }
+  .signin-methods .ant-tabs-tab { border-radius: 6px; min-height: 44px; padding: 8px !important; }
+  .signin-methods .ant-tabs-tab-active { background: #fff !important; box-shadow: 0 1px 3px #0f172a12; }
+  .ant-form-item-row { display: flex; flex-direction: column; }
+  .ant-form-item-label, .ant-form-item-control { flex: 0 0 auto !important; width: 100%; max-width: 100%; }
+  .ant-form-item-label { text-align: left !important; padding-bottom: 8px; }
+  .ant-form-item-label > label { height: auto !important; line-height: 20px; font-size: 14px; font-weight: 500; }
+  .ant-form-item-label > label::before, .ant-form-item-label > label::after { display: none !important; }
+  .ant-form-item-control { min-width: 0; }
+  .signin-phone .ant-input-group { display: flex; gap: 8px; }
+  .signin-phone .ant-select { width: 104px !important; flex-shrink: 0; }
+  .signin-phone .signup-phone-input { flex: 1; width: 0 !important; min-width: 0; }
+  .phone-signup-notice { color: #64748b; font-size: 12px; line-height: 20px; margin-bottom: 12px; }
+  .login-button-box { clear: both; }
+  .login-forget-password { width: 100% !important; }
+  .ant-input-search-button { min-width: 104px; }
+  .login-panel-dark {
+    .signin-methods .ant-tabs-nav-list { background: #202b3b; }
+    .signin-methods .ant-tabs-tab-active { background: #334155; }
+    .unified-account-label, .phone-signup-notice { color: #aab8ca; }
+  }
+}
+@media (max-width: 480px) {
+  .unified-login {
+    .login-panel > .login-form, .login-panel-dark > .login-form { padding: 28px 20px 24px !important; }
+    .login-panel input.ant-input, .login-panel-dark input.ant-input { font-size: 16px !important; }
+    .login-logo-box img { max-width: 210px; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .unified-login *, .unified-login *::before, .unified-login *::after { animation: none !important; transition: none !important; }
+}

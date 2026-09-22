@@ -31,6 +31,7 @@ import SelfLoginButton from "./SelfLoginButton";
 import i18next from "i18next";
 import CustomGithubCorner from "../common/CustomGithubCorner";
 import {isUnifiedPhoneLogin, phoneSigninValues, unifiedPhoneMethod} from "./phoneSignin";
+import "./UnifiedLogin.less";
 import {SendCodeInput} from "../common/SendCodeInput";
 import LanguageSelect from "../common/select/LanguageSelect";
 import {CaptchaModal, CaptchaRule} from "../common/modal/CaptchaModal";
@@ -681,6 +682,7 @@ class LoginPage extends React.Component {
           {
             Setting.renderLogo(application)
           }
+          {unifiedPhoneMethod(application) && <div className="unified-account-label">{i18next.t("login:Unified account")}</div>}
         </div>
       );
     } else if (signinItem.name === "Back button") {
@@ -726,7 +728,7 @@ class LoginPage extends React.Component {
       }
 
       if (this.state.loginMethod === "verificationCodePhone") {
-        return <Form.Item className="signin-phone" required={true}>
+        return <Form.Item className="signin-phone" required={true} label={unifiedPhoneMethod(application) ? i18next.t("general:Phone") : null}>
           <Input.Group compact>
             <Form.Item
               name="countryCode"
@@ -773,6 +775,7 @@ class LoginPage extends React.Component {
               <Input
                 className="signup-phone-input"
                 placeholder={isUnifiedPhoneLogin(application, this.state.loginMethod, this.state.validEmail) ? i18next.t("login:Enter phone number") : signinItem.placeholder}
+                aria-label={i18next.t("general:Phone")}
                 autoComplete="tel-national"
                 inputMode="tel"
                 style={{width: "65%", textAlign: "left"}}
@@ -1442,7 +1445,7 @@ class LoginPage extends React.Component {
         <Col span={24}>
           <Form.Item
             name="code"
-            label={signinItem.label ? signinItem.label : null}
+            label={unifiedPhoneMethod(application) ? i18next.t("login:Verification code") : (signinItem.label || null)}
             rules={[{required: true, message: i18next.t("login:Please input your code!")}]}
             className="verification-code"
           >
@@ -1661,7 +1664,7 @@ class LoginPage extends React.Component {
     return (
       <React.Fragment>
         <CustomGithubCorner />
-        <div className="login-content" style={{margin: this.props.preview ?? this.parseOffset(application.formOffset)}}>
+        <div className={`login-content${unifiedPhoneMethod(application) ? " unified-login" : ""}`} style={{margin: this.props.preview ?? this.parseOffset(application.formOffset)}}>
           {Setting.inIframe() || Setting.isMobile() ? null : <div dangerouslySetInnerHTML={{__html: application.formCss}} />}
           {Setting.inIframe() || !Setting.isMobile() ? null : <div dangerouslySetInnerHTML={{__html: application.formCssMobile}} />}
           <div className={Setting.isDarkTheme(this.props.themeAlgorithm) ? "login-panel-dark" : "login-panel"}>
