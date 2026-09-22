@@ -26,3 +26,11 @@ Matrix 与子应用的业务代码、入口、网关和 API Key 未变更。已�
 使用原 `docker-compose.mozia.yml` 加 `docker-compose.phone-login.yml` 启动 SSO。原文件会话复制到 `session-data` 并挂载 `/tmp`，后续重建须继续保留该卷。
 
 生产受限备份位于 `~/app/mozia-sso-backups/20260922-phone-login`，包括发布前数据库、配置、旧镜像标识及 `rollback.sh`。回退脚本恢复旧配置和旧镜像，保留会话卷及已创建用户，不覆盖用户数据库。新增列兼容旧版。该脚本已准备，本次未为了演练再中断生产。
+
+## MoSpace 授权入口补齐
+
+用户反馈 MoSpace 仍显示旧版。原因是上一轮仅开启 `mozia-matrix`，MoSpace 使用独立应用配置，遗漏了其应用级开关。
+
+本轮为生产 `admin/MoSpace` 开启 `enablePhoneSigninSignup`，补充已有《统一账户与服务用户协议》地址（正文明确覆盖全系列服务）。保留原 Mozia 组织、Logo、client、注册策略与全部回调地址，无服务重启。修改前两项配置及用于核对的非秘密配置保存在同一受限备份目录 `mospace-before.json`。
+
+已在真实生产 MoSpace client 的授权页确认：默认“手机登录”、手机号／验证码、“登录 / 注册”、自动注册提示、协议和原 Logo 均显示；已有会话的“使用以下账号继续”保留。该检查未提交模拟 state 的授权请求。真实 MoSpace 回跳由用户从 MoSpace 重新发起登录验收。
