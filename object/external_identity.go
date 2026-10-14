@@ -12,8 +12,10 @@ import (
 
 const HduCASProviderType = "HduCAS"
 
-var ErrHduIdentityAlreadyLinked = errors.New("HDU identity is already linked")
-var ErrHduIdentityBindingChanged = errors.New("HDU identity binding changed")
+var (
+	ErrHduIdentityAlreadyLinked  = errors.New("HDU identity is already linked")
+	ErrHduIdentityBindingChanged = errors.New("HDU identity binding changed")
+)
 
 type ExternalIdentityBinding struct {
 	SubjectKey string `xorm:"varchar(64) pk" json:"-"`
