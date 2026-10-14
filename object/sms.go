@@ -15,6 +15,9 @@
 package object
 
 import (
+	"errors"
+	"log"
+	"net"
 	"strconv"
 	"strings"
 
@@ -49,7 +52,7 @@ func getSmsClient(provider *Provider) (sender.SmsClient, error) {
 func SendSms(provider *Provider, content string, phoneNumbers ...string) error {
 	client, err := getSmsClient(provider)
 	if err != nil {
-		return err
+		return publicSmsError(err)
 	}
 
 	if provider.Type == sender.Twilio {
@@ -82,5 +85,25 @@ func SendSms(provider *Provider, content string, phoneNumbers ...string) error {
 	}
 
 	err = client.SendMessage(params, phoneNumbers...)
-	return err
+	return publicSmsError(err)
+}
+
+// SDK errors can include signed URLs containing credentials, recipients and codes.
+// Sanitize at the shared sending boundary, before API responses and audit records.
+func publicSmsError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	category := "provider_error"
+	var dnsErr *net.DNSError
+	var netErr net.Error
+	if errors.As(err, &dnsErr) {
+		category = "dns_error"
+	} else if errors.As(err, &netErr) && netErr.Timeout() {
+		category = "network_timeout"
+	}
+	// Only fixed categories and the Go type are logged, never err.Error() or URLs.
+	log.Printf("sms_send_failed category=%s error_type=%T", category, err)
+	return errors.New("Failed to send SMS, please try again later")
 }
