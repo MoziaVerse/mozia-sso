@@ -1,5 +1,10 @@
 # AGENTS.md — Mozia SSO Project Conventions
 
+## 本机多仓库约定
+
+- 根目录存在 `AGENTS.LOCAL.md` 时，先读取并遵守。
+- 约定发生冲突时，明确指出并向用户确认，不自行覆盖。
+
 ## Project Purpose
 
 `mozia-sso` is the shared identity provider for the Mozia product family. It is based on Casdoor and exposes OAuth/OIDC login, authorization, token, userinfo, and identity administration capabilities.
